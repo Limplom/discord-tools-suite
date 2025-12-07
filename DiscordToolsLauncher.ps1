@@ -87,6 +87,12 @@ $script:Tools = @{
         Description = 'Audit connected accounts & privacy'
         RequiresToken = $true
     }
+    '5' = @{
+        Name = 'Discord Message Analytics'
+        File = 'DiscordMessageAnalyzer.ps1'
+        Description = 'Analyze message patterns, DM activity & emoji usage'
+        RequiresToken = $true
+    }
 }
 
 function Get-DiscordUser {
@@ -270,7 +276,7 @@ function Show-Help {
 
     Write-Host "QUICK START:" -ForegroundColor Yellow
     Write-Host "  1. Set your Discord token using option [T]" -ForegroundColor White
-    Write-Host "  2. Select a tool from the menu (1-5)" -ForegroundColor White
+    Write-Host "  2. Select a tool from the menu (1-6)" -ForegroundColor White
     Write-Host "  3. View results and analysis" -ForegroundColor White
     Write-Host ""
 
@@ -303,6 +309,14 @@ function Show-Help {
     Write-Host "      - Privacy score (0-100 with grade)" -ForegroundColor Gray
     Write-Host "      - Detects exposed access tokens" -ForegroundColor Gray
     Write-Host "      - Shows activity display settings" -ForegroundColor Gray
+    Write-Host ""
+
+    Write-Host "  [5] Message Analytics" -ForegroundColor Cyan
+    Write-Host "      Analyzes your messaging patterns:" -ForegroundColor Gray
+    Write-Host "      - DM conversation statistics" -ForegroundColor Gray
+    Write-Host "      - Emoji usage analysis" -ForegroundColor Gray
+    Write-Host "      - Message activity by time and day" -ForegroundColor Gray
+    Write-Host "      - Top servers and users by mentions" -ForegroundColor Gray
     Write-Host ""
 
     Write-Host "SECURITY TIPS:" -ForegroundColor Yellow
@@ -398,6 +412,18 @@ function Start-Tool {
                     & $toolPath -Token $script:CurrentToken -QuietMode
                 }
             }
+            '5' {
+                # Message Analytics - requires token, ask for export option
+                Write-Host "[?] Export results to file? (Y/N): " -ForegroundColor Yellow -NoNewline
+                $exportChoice = Read-Host
+                Write-Host ""
+
+                if ($exportChoice -eq 'Y' -or $exportChoice -eq 'y') {
+                    & $toolPath -Token $script:CurrentToken -ExportToFile -QuietMode
+                } else {
+                    & $toolPath -Token $script:CurrentToken -QuietMode
+                }
+            }
         }
 
     } catch {
@@ -430,7 +456,7 @@ function Start-Launcher {
                 Write-Host ""
                 exit
             }
-            { $_ -in @('1', '2', '3', '4') } {
+            { $_ -in @('1', '2', '3', '4', '5') } {
                 Start-Tool -ToolKey $_
             }
             default {
