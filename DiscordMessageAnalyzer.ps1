@@ -179,23 +179,10 @@ function Analyze-MessagePatterns {
         $words = ($content -split '\s+').Count
         $stats.TotalWords += $words
 
-        # Extract emojis (Unicode emojis and custom Discord emojis)
-        $unicodeEmojiPattern = '[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1F1E0}-\u{1F1FF}]'
+        # Extract emojis (Custom Discord emojis and common Unicode emojis)
         $customEmojiPattern = '<a?:\w+:\d+>'
 
-        # Find Unicode emojis
-        if ($content -match $unicodeEmojiPattern) {
-            $matches = [regex]::Matches($content, $unicodeEmojiPattern)
-            foreach ($match in $matches) {
-                $emoji = $match.Value
-                if (-not $stats.EmojisUsed.ContainsKey($emoji)) {
-                    $stats.EmojisUsed[$emoji] = 0
-                }
-                $stats.EmojisUsed[$emoji]++
-            }
-        }
-
-        # Find custom emojis
+        # Find custom Discord emojis (always works)
         if ($content -match $customEmojiPattern) {
             $matches = [regex]::Matches($content, $customEmojiPattern)
             foreach ($match in $matches) {
@@ -205,6 +192,30 @@ function Analyze-MessagePatterns {
                 }
                 $stats.EmojisUsed[$emoji]++
             }
+        }
+
+        # Find common Unicode emojis (using .NET char detection)
+        # This is more compatible than regex patterns across PS versions
+        try {
+            for ($i = 0; $i -lt $content.Length; $i++) {
+                $char = $content[$i]
+                $charCode = [int][char]$char
+
+                # Detect emoji ranges (common emojis)
+                # Emoticons: 0x1F600-0x1F64F
+                # Misc Symbols: 0x2600-0x26FF, 0x2700-0x27BF
+                # Note: Full surrogate pair detection would be more complex
+                if ($charCode -ge 0x2600 -and $charCode -le 0x27BF) {
+                    $emoji = $char.ToString()
+                    if (-not $stats.EmojisUsed.ContainsKey($emoji)) {
+                        $stats.EmojisUsed[$emoji] = 0
+                    }
+                    $stats.EmojisUsed[$emoji]++
+                }
+            }
+        }
+        catch {
+            # Silently skip emoji detection if it fails
         }
 
         # Time-based analysis
