@@ -222,10 +222,23 @@ function Export-ToHTML {
     param(
         [string]$OutputPath,
         [array]$Messages,
-        [hashtable]$ChannelInfo
+        [hashtable]$ChannelInfo,
+        [string]$CurrentUserId
     )
 
     $sb = New-Object System.Text.StringBuilder
+
+    # Build color map for users
+    $userColors = @{}
+    $colorPalette = @('#5865f2', '#57f287', '#fee75c', '#eb459e', '#ed4245', '#f26522', '#1abc9c', '#9b59b6')
+    $colorIndex = 0
+
+    foreach ($msg in $Messages) {
+        if ($msg.author -and $msg.author.id -and -not $userColors.ContainsKey($msg.author.id)) {
+            $userColors[$msg.author.id] = $colorPalette[$colorIndex % $colorPalette.Count]
+            $colorIndex++
+        }
+    }
 
     # HTML Header
     $sb.AppendLine("<!DOCTYPE html>") | Out-Null
@@ -236,19 +249,25 @@ function Export-ToHTML {
     $sb.AppendLine("    <title>Discord DM - $($ChannelInfo.Name)</title>") | Out-Null
     $sb.AppendLine("    <style>") | Out-Null
     $sb.AppendLine("        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #36393f; color: #dcddde; margin: 0; padding: 20px; }") | Out-Null
-    $sb.AppendLine("        .container { max-width: 1000px; margin: 0 auto; background: #2f3136; border-radius: 8px; padding: 20px; }") | Out-Null
+    $sb.AppendLine("        .container { max-width: 900px; margin: 0 auto; background: #2f3136; border-radius: 8px; padding: 20px; }") | Out-Null
     $sb.AppendLine("        .header { border-bottom: 2px solid #202225; padding-bottom: 20px; margin-bottom: 20px; }") | Out-Null
     $sb.AppendLine("        .header h1 { margin: 0; color: #fff; }") | Out-Null
     $sb.AppendLine("        .header p { margin: 5px 0; color: #b9bbbe; }") | Out-Null
-    $sb.AppendLine("        .message { margin-bottom: 20px; padding: 10px; border-left: 3px solid #5865f2; background: #40444b; border-radius: 4px; }") | Out-Null
-    $sb.AppendLine("        .message-header { display: flex; align-items: baseline; margin-bottom: 5px; }") | Out-Null
-    $sb.AppendLine("        .author { font-weight: bold; color: #5865f2; margin-right: 10px; }") | Out-Null
-    $sb.AppendLine("        .timestamp { font-size: 0.75rem; color: #72767d; }") | Out-Null
-    $sb.AppendLine("        .content { color: #dcddde; white-space: pre-wrap; word-wrap: break-word; }") | Out-Null
-    $sb.AppendLine("        .attachment { margin-top: 10px; padding: 8px; background: #202225; border-radius: 4px; color: #00b0f4; }") | Out-Null
-    $sb.AppendLine("        .attachment a { color: #00b0f4; text-decoration: none; }") | Out-Null
+    $sb.AppendLine("        .messages { display: flex; flex-direction: column; gap: 12px; }") | Out-Null
+    $sb.AppendLine("        .message-wrapper { display: flex; width: 100%; }") | Out-Null
+    $sb.AppendLine("        .message-wrapper.left { justify-content: flex-start; }") | Out-Null
+    $sb.AppendLine("        .message-wrapper.right { justify-content: flex-end; }") | Out-Null
+    $sb.AppendLine("        .message { max-width: 70%; padding: 12px; border-radius: 12px; background: #40444b; }") | Out-Null
+    $sb.AppendLine("        .message.left { border-bottom-left-radius: 4px; }") | Out-Null
+    $sb.AppendLine("        .message.right { border-bottom-right-radius: 4px; background: #5865f2; }") | Out-Null
+    $sb.AppendLine("        .message-header { display: flex; align-items: baseline; margin-bottom: 6px; gap: 8px; }") | Out-Null
+    $sb.AppendLine("        .author { font-weight: 600; font-size: 14px; }") | Out-Null
+    $sb.AppendLine("        .timestamp { font-size: 11px; color: #a3a6aa; }") | Out-Null
+    $sb.AppendLine("        .content { color: #dcddde; white-space: pre-wrap; word-wrap: break-word; line-height: 1.4; font-size: 15px; }") | Out-Null
+    $sb.AppendLine("        .attachment { margin-top: 10px; padding: 8px 12px; background: #2b2d31; border-radius: 8px; }") | Out-Null
+    $sb.AppendLine("        .attachment a { color: #00b0f4; text-decoration: none; font-size: 13px; }") | Out-Null
     $sb.AppendLine("        .attachment a:hover { text-decoration: underline; }") | Out-Null
-    $sb.AppendLine("        .embed { margin-top: 10px; padding: 8px; background: #2f3136; border-left: 4px solid #5865f2; border-radius: 4px; font-size: 0.9rem; color: #b9bbbe; }") | Out-Null
+    $sb.AppendLine("        .embed { margin-top: 10px; padding: 8px 12px; background: #2f3136; border-left: 4px solid #5865f2; border-radius: 4px; font-size: 13px; color: #b9bbbe; }") | Out-Null
     $sb.AppendLine("    </style>") | Out-Null
     $sb.AppendLine("</head>") | Out-Null
     $sb.AppendLine("<body>") | Out-Null
@@ -259,14 +278,18 @@ function Export-ToHTML {
     $sb.AppendLine("            <p><strong>Exported:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')</p>") | Out-Null
     $sb.AppendLine("            <p><strong>Total Messages:</strong> $($Messages.Count)</p>") | Out-Null
     $sb.AppendLine("        </div>") | Out-Null
+    $sb.AppendLine("        <div class='messages'>") | Out-Null
 
     # Messages
     foreach ($msg in $Messages) {
         $timestamp = if ($msg.timestamp) {
-            [DateTime]::Parse($msg.timestamp, [System.Globalization.CultureInfo]::InvariantCulture).ToString("yyyy-MM-dd HH:mm:ss")
+            [DateTime]::Parse($msg.timestamp, [System.Globalization.CultureInfo]::InvariantCulture).ToString("HH:mm")
         } else {
             "Unknown"
         }
+
+        $isCurrentUser = ($msg.author -and $msg.author.id -eq $CurrentUserId)
+        $alignment = if ($isCurrentUser) { "right" } else { "left" }
 
         $author = if ($msg.author) {
             if ($msg.author.global_name) {
@@ -278,32 +301,41 @@ function Export-ToHTML {
             "Unknown"
         }
 
+        $authorColor = if ($msg.author -and $msg.author.id) {
+            $userColors[$msg.author.id]
+        } else {
+            '#72767d'
+        }
+
         $content = [System.Web.HttpUtility]::HtmlEncode($msg.content)
 
-        $sb.AppendLine("        <div class='message'>") | Out-Null
-        $sb.AppendLine("            <div class='message-header'>") | Out-Null
-        $sb.AppendLine("                <span class='author'>$author</span>") | Out-Null
-        $sb.AppendLine("                <span class='timestamp'>$timestamp</span>") | Out-Null
-        $sb.AppendLine("            </div>") | Out-Null
-        $sb.AppendLine("            <div class='content'>$content</div>") | Out-Null
+        $sb.AppendLine("            <div class='message-wrapper $alignment'>") | Out-Null
+        $sb.AppendLine("                <div class='message $alignment'>") | Out-Null
+        $sb.AppendLine("                    <div class='message-header'>") | Out-Null
+        $sb.AppendLine("                        <span class='author' style='color: $authorColor;'>$author</span>") | Out-Null
+        $sb.AppendLine("                        <span class='timestamp'>$timestamp</span>") | Out-Null
+        $sb.AppendLine("                    </div>") | Out-Null
+        $sb.AppendLine("                    <div class='content'>$content</div>") | Out-Null
 
         # Attachments
         if ($msg.attachments -and $msg.attachments.Count -gt 0) {
             foreach ($attachment in $msg.attachments) {
                 $fileName = [System.Web.HttpUtility]::HtmlEncode($attachment.filename)
                 $url = [System.Web.HttpUtility]::HtmlEncode($attachment.url)
-                $sb.AppendLine("            <div class='attachment'>📎 <a href='$url' target='_blank'>$fileName</a></div>") | Out-Null
+                $sb.AppendLine("                    <div class='attachment'>📎 <a href='$url' target='_blank'>$fileName</a></div>") | Out-Null
             }
         }
 
         # Embeds
         if ($msg.embeds -and $msg.embeds.Count -gt 0) {
-            $sb.AppendLine("            <div class='embed'>📋 Contains $($msg.embeds.Count) embed(s)</div>") | Out-Null
+            $sb.AppendLine("                    <div class='embed'>📋 Contains $($msg.embeds.Count) embed(s)</div>") | Out-Null
         }
 
-        $sb.AppendLine("        </div>") | Out-Null
+        $sb.AppendLine("                </div>") | Out-Null
+        $sb.AppendLine("            </div>") | Out-Null
     }
 
+    $sb.AppendLine("        </div>") | Out-Null
     $sb.AppendLine("    </div>") | Out-Null
     $sb.AppendLine("</body>") | Out-Null
     $sb.AppendLine("</html>") | Out-Null
@@ -382,10 +414,20 @@ function Show-DMChannelList {
             }
         } elseif ($channel.type -eq 3) {
             # Group DM
+            $memberNames = @()
+            foreach ($recipient in $channel.recipients) {
+                if ($recipient.global_name) {
+                    $memberNames += $recipient.global_name
+                } else {
+                    $memberNames += $recipient.username
+                }
+            }
+            $memberList = $memberNames -join ", "
+
             if ($channel.name) {
-                $channel.name
+                "$($channel.name) ($($channel.recipients.Count) members) [$memberList]"
             } else {
-                "Group DM ($($channel.recipients.Count) members)"
+                "Group DM ($($channel.recipients.Count) members) [$memberList]"
             }
         } else {
             "Unknown Channel"
@@ -403,7 +445,8 @@ function Backup-SelectedDMs {
         [array]$Channels,
         [string]$Token,
         [string]$Format,
-        [bool]$DownloadMediaFiles
+        [bool]$DownloadMediaFiles,
+        [string]$CurrentUserId
     )
 
     Write-Host "[?] Enter DM numbers to backup (e.g., 1,3,5 or 'all'): " -ForegroundColor Yellow -NoNewline
@@ -498,7 +541,7 @@ function Backup-SelectedDMs {
 
         if ($Format -eq "HTML" -or $Format -eq "All") {
             $htmlPath = Join-Path $outputDir "$channelName.html"
-            Export-ToHTML -OutputPath $htmlPath -Messages $messages -ChannelInfo $channelInfo
+            Export-ToHTML -OutputPath $htmlPath -Messages $messages -ChannelInfo $channelInfo -CurrentUserId $CurrentUserId
         }
 
         # Download media if requested
@@ -564,7 +607,8 @@ Show-DMChannelList -Channels $dmChannels
 Backup-SelectedDMs -Channels $dmChannels `
                    -Token $Token `
                    -Format $Format `
-                   -DownloadMediaFiles $DownloadMedia
+                   -DownloadMediaFiles $DownloadMedia `
+                   -CurrentUserId $userInfo.id
 
 # Only show "Press any key" if not in quiet mode
 if (-not $QuietMode) {
