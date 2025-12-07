@@ -340,9 +340,10 @@ function Export-ToHTML {
                 }
                 elseif ($videoExtensions -contains $extension) {
                     # Embed video
+                    $videoType = $extension.TrimStart('.')
                     $sb.AppendLine("                    <div class='attachment'>") | Out-Null
                     $sb.AppendLine("                        <video controls style='max-width: 100%; border-radius: 8px; margin-top: 8px;'>") | Out-Null
-                    $sb.AppendLine("                            <source src='$url' type='video/$($extension.TrimStart(`.`))'>") | Out-Null
+                    $sb.AppendLine("                            <source src='$url' type='video/$videoType'>") | Out-Null
                     $sb.AppendLine("                            Your browser does not support the video tag.") | Out-Null
                     $sb.AppendLine("                        </video>") | Out-Null
                     $sb.AppendLine("                        <div style='font-size: 12px; color: #a3a6aa; margin-top: 4px;'>🎥 $fileName</div>") | Out-Null
