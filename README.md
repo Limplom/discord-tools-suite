@@ -18,6 +18,7 @@ These tools are designed for **educational purposes and security research only**
   - [3. Discord Affinity Analyzer](#3-discord-affinity-analyzer)
   - [4. Discord Connections Analyzer](#4-discord-connections-analyzer)
   - [5. Discord Message Analytics](#5-discord-message-analytics)
+  - [6. Discord Friend Network Analyzer](#6-discord-friend-network-analyzer)
 - [Common Use Cases](#common-use-cases)
 - [Security Best Practices](#security-best-practices)
 - [Troubleshooting](#troubleshooting)
@@ -34,6 +35,7 @@ These tools are designed for **educational purposes and security research only**
 | **DiscordAffinityAnalyzer.ps1** | Analyze server activity and mentions | Shows affinity scores, mention statistics |
 | **DiscordConnectionsAnalyzer.ps1** | Audit connected accounts & privacy | Privacy scoring, token exposure detection |
 | **DiscordMessageAnalyzer.ps1** | Analyze messaging patterns & activity | DM stats, emoji usage, time-based analysis |
+| **DiscordFriendNetworkAnalyzer.ps1** | Map friend relationships & networks | Mutual servers, friend distribution, social graph |
 
 ---
 
@@ -95,7 +97,7 @@ The launcher provides:
 
 **File:** `DiscordTokenSearch.ps1`
 
-Advanced token search tool that finds both unencrypted AND encrypted Discord authentication tokens.
+Advanced token search tool that finds, validates, and displays Discord authentication tokens with usernames. Automatically filters out invalid/expired tokens.
 
 #### Features
 
@@ -112,6 +114,13 @@ Advanced token search tool that finds both unencrypted AND encrypted Discord aut
 - Finds unencrypted tokens (old format)
 - Finds encrypted tokens (new format: `dQw4w9WgXcQ:base64`)
 - Offers to install PowerShell 7 if encrypted tokens detected
+
+**Token Validation:**
+- Validates all found tokens via Discord API
+- Displays username/global name for each valid token
+- Shows Discord ID for each account
+- Automatically filters out invalid/expired tokens
+- Progress indicator during validation
 
 #### Requirements
 
@@ -543,6 +552,130 @@ The tool analyzes:
 
 ---
 
+### 6. Discord Friend Network Analyzer
+
+**File:** `DiscordFriendNetworkAnalyzer.ps1`
+
+Comprehensive tool for analyzing your Discord friend network, mapping relationships, and discovering mutual connections across servers.
+
+#### Usage
+
+```powershell
+# Basic usage
+.\DiscordFriendNetworkAnalyzer.ps1 -Token "YOUR_TOKEN"
+
+# Export results to JSON file
+.\DiscordFriendNetworkAnalyzer.ps1 -Token "YOUR_TOKEN" -ExportToFile
+```
+
+#### Features
+
+- **Friend Analysis:**
+  - Complete friend list with relationship data
+  - Identifies mutual servers for each friend
+  - Ranks friends by number of mutual servers
+  - Separates server friends from DM-only friends
+
+- **Server Analytics:**
+  - Top servers by friend count
+  - Shows which friends are in each server
+  - Server-based friend clustering
+  - Identifies your most social servers
+
+- **Network Statistics:**
+  - Total friends and servers overview
+  - Friend distribution analysis
+  - Average mutual servers per friend
+  - Percentage of friends with mutual servers
+
+- **Social Patterns:**
+  - Discovers friend clustering patterns
+  - Maps your social network structure
+  - Identifies isolated vs. connected friends
+
+#### Output Example
+
+```
+===============================================================================
+                    FRIEND NETWORK ANALYSIS
+===============================================================================
+
+=== OVERALL STATISTICS ===
+Total Friends: 42
+Total Servers: 16
+Servers with Friends: 8
+
+=== TOP FRIENDS BY MUTUAL SERVERS ===
+  1. BestFriend: 8 mutual servers
+  2. GamingBuddy: 6 mutual servers
+  3. Colleague: 4 mutual servers
+  4. ClassMate: 3 mutual servers
+  5. Teammate: 2 mutual servers
+
+=== TOP SERVERS BY FRIEND COUNT ===
+
+  1. Gaming Community
+     Friends in this server: 15
+       - BestFriend
+       - GamingBuddy
+       - Player123
+       - ProGamer
+       - StreamerFriend
+       ... and 10 more
+
+  2. Developer Hub
+     Friends in this server: 8
+       - Colleague
+       - CodeMaster
+       - DevFriend
+       ... and 5 more
+
+=== FRIEND DISTRIBUTION ===
+Friends with mutual servers: 35
+Friends without mutual servers: 7
+Percentage with mutual servers: 83.3%
+Average mutual servers per friend: 2.4
+
+===============================================================================
+                    DETAILED FRIEND LIST
+===============================================================================
+
+=== FRIENDS WITH MUTUAL SERVERS ===
+
+  BestFriend (8 mutual servers)
+    - Gaming Community
+    - Developer Hub
+    - Movie Nights
+    ... and 5 more
+
+  GamingBuddy (6 mutual servers)
+    - Gaming Community
+    - FPS Squad
+    - Strategy Games
+
+=== FRIENDS WITHOUT MUTUAL SERVERS (DM only) ===
+  - RandomPerson
+  - OldFriend
+  - DMContact
+```
+
+#### Data Sources
+
+The tool analyzes:
+- **Friend Relationships:** Complete friend list from Discord API
+- **Server Memberships:** Your server list and member data
+- **Mutual Connections:** Cross-references friends across servers
+
+#### Privacy & Limitations
+
+- Analyzes only YOUR friend list and server memberships
+- Server member data may be limited based on server permissions
+- Large servers may have partial member data
+- All data stays local unless exported
+- Built-in rate limiting to respect Discord API
+
+---
+
 ## 🎯 Common Use Cases
 
 ### Security Audit
@@ -567,9 +700,13 @@ $results = Test-DiscordAPI -Token "TOKEN" -SaveToFile
 # Analyze messaging patterns
 .\DiscordMessageAnalyzer.ps1 -Token "TOKEN"
 
+# Analyze friend network
+.\DiscordFriendNetworkAnalyzer.ps1 -Token "TOKEN"
+
 # Export for further analysis
 .\DiscordConnectionsAnalyzer.ps1 -Token "TOKEN" -ExportToFile
 .\DiscordMessageAnalyzer.ps1 -Token "TOKEN" -ExportToFile
+.\DiscordFriendNetworkAnalyzer.ps1 -Token "TOKEN" -ExportToFile
 ```
 
 ### API Research
@@ -741,4 +878,4 @@ Authorization: YOUR_TOKEN_HERE
 ---
 
 **Last Updated:** December 2025
-**Version:** 1.1
+**Version:** 1.2
