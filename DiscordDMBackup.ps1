@@ -180,7 +180,7 @@ function Export-ToTXT {
 
     foreach ($msg in $Messages) {
         $timestamp = if ($msg.timestamp) {
-            [DateTime]::Parse($msg.timestamp).ToString("yyyy-MM-dd HH:mm:ss")
+            [DateTime]::Parse($msg.timestamp, [System.Globalization.CultureInfo]::InvariantCulture).ToString("yyyy-MM-dd HH:mm:ss")
         } else {
             "Unknown"
         }
@@ -263,7 +263,7 @@ function Export-ToHTML {
     # Messages
     foreach ($msg in $Messages) {
         $timestamp = if ($msg.timestamp) {
-            [DateTime]::Parse($msg.timestamp).ToString("yyyy-MM-dd HH:mm:ss")
+            [DateTime]::Parse($msg.timestamp, [System.Globalization.CultureInfo]::InvariantCulture).ToString("yyyy-MM-dd HH:mm:ss")
         } else {
             "Unknown"
         }
