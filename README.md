@@ -17,6 +17,7 @@ These tools are designed for **educational purposes and security research only**
   - [2. Discord API Explorer](#2-discord-api-explorer)
   - [3. Discord Affinity Analyzer](#3-discord-affinity-analyzer)
   - [4. Discord Connections Analyzer](#4-discord-connections-analyzer)
+  - [5. Discord Message Analytics](#5-discord-message-analytics)
 - [Common Use Cases](#common-use-cases)
 - [Security Best Practices](#security-best-practices)
 - [Troubleshooting](#troubleshooting)
@@ -32,6 +33,7 @@ These tools are designed for **educational purposes and security research only**
 | **DiscordAPIExplorer.ps1** | Explore available Discord API endpoints | Tests 20+ endpoints, shows available data |
 | **DiscordAffinityAnalyzer.ps1** | Analyze server activity and mentions | Shows affinity scores, mention statistics |
 | **DiscordConnectionsAnalyzer.ps1** | Audit connected accounts & privacy | Privacy scoring, token exposure detection |
+| **DiscordMessageAnalyzer.ps1** | Analyze messaging patterns & activity | DM stats, emoji usage, time-based analysis |
 
 ---
 
@@ -415,6 +417,132 @@ Accounts Showing Activity:
 
 ---
 
+### 5. Discord Message Analytics
+
+**File:** `DiscordMessageAnalyzer.ps1`
+
+Comprehensive tool for analyzing your Discord messaging patterns, DM activity, emoji usage, and communication statistics.
+
+#### Usage
+
+```powershell
+# Basic usage
+.\DiscordMessageAnalyzer.ps1 -Token "YOUR_TOKEN"
+
+# Export results to JSON file
+.\DiscordMessageAnalyzer.ps1 -Token "YOUR_TOKEN" -ExportToFile
+```
+
+#### Features
+
+- **Message Statistics:**
+  - Total mentions received and breakdown by type
+  - DM conversation analysis with send/receive ratios
+  - Message length and word count statistics
+
+- **Top Metrics:**
+  - Top servers by mention count
+  - Top users who mention you
+  - Most active DM conversations
+
+- **Emoji Analysis:**
+  - Most used emojis (Unicode + custom Discord emojis)
+  - Frequency tracking across all messages
+
+- **Time-Based Analysis:**
+  - Activity patterns by hour of day
+  - Activity distribution by day of week
+  - Identifies your most active communication times
+
+- **DM Activity:**
+  - Analyzes up to 10 most recent DM conversations
+  - Shows message counts (sent vs received)
+  - Average message length per conversation
+  - Last message timestamps
+
+#### Output Example
+
+```
+===============================================================================
+                    MESSAGE ANALYTICS DASHBOARD
+===============================================================================
+
+=== OVERALL STATISTICS ===
+Total Mentions Received: 42
+Total DM Conversations Analyzed: 8
+Total DM Messages: 156
+
+=== MENTION TYPE BREAKDOWN ===
+Direct Mentions (@you): 35
+Role Mentions: 5
+@everyone/@here Mentions: 2
+
+=== TOP SERVERS BY MENTIONS ===
+  1. My Server: 23 mentions
+  2. Gaming Guild: 12 mentions
+  3. Dev Server: 7 mentions
+
+=== TOP USERS WHO MENTION YOU ===
+  1. Friend#1234: 8 mentions
+  2. Admin#5678: 6 mentions
+  3. Bot#0000: 4 mentions
+
+=== TOP DM CONVERSATIONS ===
+
+  1. Friend#1234
+     Total Messages: 45
+     Your Messages: 22 | Received: 23
+     Avg Message Length: 67.3 characters
+
+  2. Colleague#5678
+     Total Messages: 38
+     Your Messages: 20 | Received: 18
+     Avg Message Length: 52.1 characters
+
+=== DM vs SERVER ACTIVITY ===
+Total DM Messages Sent: 82
+Total DM Messages Received: 74
+Send/Receive Ratio: 1.11 (Balanced)
+
+=== EMOJI USAGE (from mentions) ===
+  1. 😂 - used 15 times
+  2. 👍 - used 12 times
+  3. ❤️ - used 8 times
+  4. <:custom:123456789> - used 6 times
+  5. 🔥 - used 5 times
+
+=== ACTIVITY BY HOUR (from mentions) ===
+Most Active Hours:
+  18:00 | #################### (12 messages)
+  20:00 | ################# (10 messages)
+  14:00 | ########### (6 messages)
+
+=== ACTIVITY BY DAY OF WEEK (from mentions) ===
+  Monday | ########### (8 messages)
+  Tuesday | ############### (11 messages)
+  Wednesday | ################## (13 messages)
+  Thursday | ########## (7 messages)
+  Friday | ################# (12 messages)
+  Saturday | ###### (4 messages)
+  Sunday | ### (2 messages)
+```
+
+#### Data Sources
+
+The tool analyzes:
+- **Recent Mentions:** Last 100 mentions across all servers
+- **DM Channels:** Up to 10 most recent DM conversations (50 messages each)
+- **Guild Information:** Server membership and metadata
+
+#### Privacy & Rate Limiting
+
+- Built-in rate limiting (300-500ms between API calls)
+- Analyzes only YOUR data (no third-party access)
+- Optional JSON export for further analysis
+- All data stays local unless exported
+
+---
+
 ## 🎯 Common Use Cases
 
 ### Security Audit
@@ -436,8 +564,12 @@ $results = Test-DiscordAPI -Token "TOKEN" -SaveToFile
 # Analyze server engagement
 .\DiscordAffinityAnalyzer.ps1 -Token "TOKEN"
 
+# Analyze messaging patterns
+.\DiscordMessageAnalyzer.ps1 -Token "TOKEN"
+
 # Export for further analysis
 .\DiscordConnectionsAnalyzer.ps1 -Token "TOKEN" -ExportToFile
+.\DiscordMessageAnalyzer.ps1 -Token "TOKEN" -ExportToFile
 ```
 
 ### API Research
@@ -608,5 +740,5 @@ Authorization: YOUR_TOKEN_HERE
 
 ---
 
-**Last Updated:** October 2025
-**Version:** 1.0
+**Last Updated:** December 2025
+**Version:** 1.1
