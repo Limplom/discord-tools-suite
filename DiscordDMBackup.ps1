@@ -20,7 +20,7 @@ param(
 $script:config = @{
     UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     MaxMessagesPerRequest = 100  # Discord API limit
-    OutputDirectory = ".\DM_Backups"
+    BaseOutputDirectory = Join-Path $PSScriptRoot "DM_Backups"
 }
 
 function Invoke-DiscordAPI {
@@ -283,7 +283,7 @@ function Export-ToHTML {
     # Messages
     foreach ($msg in $Messages) {
         $timestamp = if ($msg.timestamp) {
-            [DateTime]::Parse($msg.timestamp, [System.Globalization.CultureInfo]::InvariantCulture).ToString("HH:mm")
+            [DateTime]::Parse($msg.timestamp, [System.Globalization.CultureInfo]::InvariantCulture).ToString("dd.MM.yyyy HH:mm")
         } else {
             "Unknown"
         }
@@ -322,7 +322,36 @@ function Export-ToHTML {
             foreach ($attachment in $msg.attachments) {
                 $fileName = [System.Web.HttpUtility]::HtmlEncode($attachment.filename)
                 $url = [System.Web.HttpUtility]::HtmlEncode($attachment.url)
-                $sb.AppendLine("                    <div class='attachment'>📎 <a href='$url' target='_blank'>$fileName</a></div>") | Out-Null
+                $extension = [System.IO.Path]::GetExtension($attachment.filename).ToLower()
+
+                # Check if it's an image
+                $imageExtensions = @('.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp')
+                # Check if it's a video
+                $videoExtensions = @('.mp4', '.webm', '.mov', '.avi', '.mkv')
+
+                if ($imageExtensions -contains $extension) {
+                    # Embed image
+                    $sb.AppendLine("                    <div class='attachment'>") | Out-Null
+                    $sb.AppendLine("                        <a href='$url' target='_blank'>") | Out-Null
+                    $sb.AppendLine("                            <img src='$url' alt='$fileName' style='max-width: 100%; border-radius: 8px; margin-top: 8px;' loading='lazy'>") | Out-Null
+                    $sb.AppendLine("                        </a>") | Out-Null
+                    $sb.AppendLine("                        <div style='font-size: 12px; color: #a3a6aa; margin-top: 4px;'>📎 $fileName</div>") | Out-Null
+                    $sb.AppendLine("                    </div>") | Out-Null
+                }
+                elseif ($videoExtensions -contains $extension) {
+                    # Embed video
+                    $sb.AppendLine("                    <div class='attachment'>") | Out-Null
+                    $sb.AppendLine("                        <video controls style='max-width: 100%; border-radius: 8px; margin-top: 8px;'>") | Out-Null
+                    $sb.AppendLine("                            <source src='$url' type='video/$($extension.TrimStart(`.`))'>") | Out-Null
+                    $sb.AppendLine("                            Your browser does not support the video tag.") | Out-Null
+                    $sb.AppendLine("                        </video>") | Out-Null
+                    $sb.AppendLine("                        <div style='font-size: 12px; color: #a3a6aa; margin-top: 4px;'>🎥 $fileName</div>") | Out-Null
+                    $sb.AppendLine("                    </div>") | Out-Null
+                }
+                else {
+                    # Regular file link
+                    $sb.AppendLine("                    <div class='attachment'>📎 <a href='$url' target='_blank'>$fileName</a></div>") | Out-Null
+                }
             }
         }
 
@@ -476,9 +505,10 @@ function Backup-SelectedDMs {
 
     Write-Host "`n[*] Backing up $($selectedIndices.Count) conversation(s)..." -ForegroundColor Cyan
 
-    # Create output directory
+    # Create output directory with user ID
     $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-    $outputDir = Join-Path $script:config.OutputDirectory "Backup_$timestamp"
+    $userDirectory = Join-Path $script:config.BaseOutputDirectory $CurrentUserId
+    $outputDir = Join-Path $userDirectory "Backup_$timestamp"
 
     if (-not (Test-Path $outputDir)) {
         New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
