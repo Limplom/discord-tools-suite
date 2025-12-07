@@ -99,6 +99,12 @@ $script:Tools = @{
         Description = 'Analyze friend relationships & mutual servers'
         RequiresToken = $true
     }
+    '7' = @{
+        Name = 'Discord DM Backup'
+        File = 'DiscordDMBackup.ps1'
+        Description = 'Export & archive DM conversations (JSON/TXT/HTML)'
+        RequiresToken = $true
+    }
 }
 
 function Get-DiscordUser {
@@ -282,7 +288,7 @@ function Show-Help {
 
     Write-Host "QUICK START:" -ForegroundColor Yellow
     Write-Host "  1. Set your Discord token using option [T]" -ForegroundColor White
-    Write-Host "  2. Select a tool from the menu (1-7)" -ForegroundColor White
+    Write-Host "  2. Select a tool from the menu (1-8)" -ForegroundColor White
     Write-Host "  3. View results and analysis" -ForegroundColor White
     Write-Host ""
 
@@ -331,6 +337,14 @@ function Show-Help {
     Write-Host "      - Top servers by friend count" -ForegroundColor Gray
     Write-Host "      - Network statistics and patterns" -ForegroundColor Gray
     Write-Host "      - Social graph analysis" -ForegroundColor Gray
+    Write-Host ""
+
+    Write-Host "  [7] DM Backup" -ForegroundColor Cyan
+    Write-Host "      Export and archive DM conversations:" -ForegroundColor Gray
+    Write-Host "      - Multiple export formats (JSON, TXT, HTML)" -ForegroundColor Gray
+    Write-Host "      - Download media files (optional)" -ForegroundColor Gray
+    Write-Host "      - Backup all or selected conversations" -ForegroundColor Gray
+    Write-Host "      - Chronological message ordering" -ForegroundColor Gray
     Write-Host ""
 
     Write-Host "SECURITY TIPS:" -ForegroundColor Yellow
@@ -450,6 +464,22 @@ function Start-Tool {
                     & $toolPath -Token $script:CurrentToken -QuietMode
                 }
             }
+            '7' {
+                # DM Backup - requires token, ask for format and media options
+                Write-Host "[?] Export format (JSON/TXT/HTML/All) [JSON]: " -ForegroundColor Yellow -NoNewline
+                $format = Read-Host
+                if ([string]::IsNullOrWhiteSpace($format)) { $format = "JSON" }
+
+                Write-Host "[?] Download media files? (Y/N) [N]: " -ForegroundColor Yellow -NoNewline
+                $mediaChoice = Read-Host
+                Write-Host ""
+
+                if ($mediaChoice -eq 'Y' -or $mediaChoice -eq 'y') {
+                    & $toolPath -Token $script:CurrentToken -Format $format -DownloadMedia -QuietMode
+                } else {
+                    & $toolPath -Token $script:CurrentToken -Format $format -QuietMode
+                }
+            }
         }
 
     } catch {
@@ -482,7 +512,7 @@ function Start-Launcher {
                 Write-Host ""
                 exit
             }
-            { $_ -in @('1', '2', '3', '4', '5', '6') } {
+            { $_ -in @('1', '2', '3', '4', '5', '6', '7') } {
                 Start-Tool -ToolKey $_
             }
             default {

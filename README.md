@@ -19,6 +19,7 @@ These tools are designed for **educational purposes and security research only**
   - [4. Discord Connections Analyzer](#4-discord-connections-analyzer)
   - [5. Discord Message Analytics](#5-discord-message-analytics)
   - [6. Discord Friend Network Analyzer](#6-discord-friend-network-analyzer)
+  - [7. Discord DM Backup](#7-discord-dm-backup)
 - [Common Use Cases](#common-use-cases)
 - [Security Best Practices](#security-best-practices)
 - [Troubleshooting](#troubleshooting)
@@ -36,6 +37,7 @@ These tools are designed for **educational purposes and security research only**
 | **DiscordConnectionsAnalyzer.ps1** | Audit connected accounts & privacy | Privacy scoring, token exposure detection |
 | **DiscordMessageAnalyzer.ps1** | Analyze messaging patterns & activity | DM stats, emoji usage, time-based analysis |
 | **DiscordFriendNetworkAnalyzer.ps1** | Map friend relationships & networks | Mutual servers, friend distribution, social graph |
+| **DiscordDMBackup.ps1** | Export & archive DM conversations | JSON/TXT/HTML export, media downloads, chronological ordering |
 
 ---
 
@@ -676,6 +678,160 @@ The tool analyzes:
 
 ---
 
+### 7. Discord DM Backup
+
+**File:** `DiscordDMBackup.ps1`
+
+Comprehensive backup tool for exporting and archiving Discord DM conversations in multiple formats with optional media downloads.
+
+#### Usage
+
+```powershell
+# Basic usage (JSON export)
+.\DiscordDMBackup.ps1 -Token "YOUR_TOKEN"
+
+# Export as TXT
+.\DiscordDMBackup.ps1 -Token "YOUR_TOKEN" -Format TXT
+
+# Export as HTML
+.\DiscordDMBackup.ps1 -Token "YOUR_TOKEN" -Format HTML
+
+# Export all formats
+.\DiscordDMBackup.ps1 -Token "YOUR_TOKEN" -Format All
+
+# With media downloads
+.\DiscordDMBackup.ps1 -Token "YOUR_TOKEN" -DownloadMedia
+```
+
+#### Features
+
+- **Multiple Export Formats:**
+  - **JSON**: Complete message data with full metadata
+  - **TXT**: Human-readable plain text format
+  - **HTML**: Beautiful Discord-style formatted HTML
+  - **All**: Exports in all three formats simultaneously
+
+- **Selective Backup:**
+  - View all DM conversations
+  - Choose specific conversations to backup
+  - Backup all conversations at once
+  - Interactive selection interface
+
+- **Media Support:**
+  - Optional media file downloads
+  - Preserves attachment URLs in exports
+  - Organizes media by conversation
+  - Supports images, videos, and other files
+
+- **Smart Features:**
+  - Chronological message ordering (oldest first)
+  - Handles large conversations (up to 10,000 messages)
+  - Rate limiting to respect Discord API
+  - Automatic timestamp conversion
+  - Sanitized filenames for compatibility
+
+#### Output Example
+
+**JSON Format:**
+```json
+{
+  "Channel": {
+    "Name": "Friend#1234",
+    "Id": "123456789",
+    "Type": 1
+  },
+  "MessageCount": 150,
+  "ExportedAt": "2025-12-07 15:30:00",
+  "Messages": [
+    {
+      "id": "123456789",
+      "content": "Hello!",
+      "timestamp": "2025-01-01T10:00:00.000Z",
+      "author": {
+        "username": "Friend",
+        "global_name": "Friend#1234"
+      }
+    }
+  ]
+}
+```
+
+**TXT Format:**
+```
+================================================================================
+Discord DM Backup - Friend#1234
+Exported: 2025-12-07 15:30:00
+Total Messages: 150
+================================================================================
+
+[2025-01-01 10:00:00] Friend#1234
+Hello!
+
+[2025-01-01 10:05:00] YourName
+Hi there!
+  [Attachment: image.png - https://cdn.discordapp.com/...]
+
+```
+
+**HTML Format:**
+- Discord-themed dark mode design
+- Formatted messages with timestamps
+- Author names with colors
+- Clickable attachment links
+- Responsive layout
+- Embed indicators
+
+#### Directory Structure
+
+```
+DM_Backups/
+└── Backup_20251207_153000/
+    ├── Friend_1234.json
+    ├── Friend_1234.txt
+    ├── Friend_1234.html
+    ├── Friend_1234_media/
+    │   ├── 123456_image.png
+    │   ├── 123457_document.pdf
+    │   └── ...
+    ├── Group_Chat.json
+    └── ...
+```
+
+#### Interactive Selection
+
+When you run the tool, you'll see:
+```
+===============================================================================
+                    YOUR DM CONVERSATIONS
+===============================================================================
+
+  [1] Friend#1234
+  [2] Colleague#5678
+  [3] Group DM (5 members)
+  [4] Gaming Buddy
+  ...
+
+[?] Enter DM numbers to backup (e.g., 1,3,5 or 'all'):
+```
+
+#### Performance Notes
+
+- Fetches messages in batches of 100 (Discord API limit)
+- Rate limited to prevent API abuse (500ms delay between requests)
+- Large conversations may take several minutes
+- Safety limit of 10,000 messages per conversation
+- Media downloads add additional time (200ms per file)
+
+#### Use Cases
+
+- **Backup Important Conversations**: Archive valuable discussions
+- **Before Account Changes**: Save DMs before deleting account
+- **Legal/Compliance**: Document business communications
+- **Nostalgia**: Save old conversations with friends
+- **Migration**: Move conversations to another platform
+
+---
+
 ## 🎯 Common Use Cases
 
 ### Security Audit
@@ -703,10 +859,26 @@ $results = Test-DiscordAPI -Token "TOKEN" -SaveToFile
 # Analyze friend network
 .\DiscordFriendNetworkAnalyzer.ps1 -Token "TOKEN"
 
+# Backup DM conversations
+.\DiscordDMBackup.ps1 -Token "TOKEN" -Format All
+
 # Export for further analysis
 .\DiscordConnectionsAnalyzer.ps1 -Token "TOKEN" -ExportToFile
 .\DiscordMessageAnalyzer.ps1 -Token "TOKEN" -ExportToFile
 .\DiscordFriendNetworkAnalyzer.ps1 -Token "TOKEN" -ExportToFile
+```
+
+### Data Backup
+
+```powershell
+# Backup all DMs in all formats
+.\DiscordDMBackup.ps1 -Token "TOKEN" -Format All
+
+# Backup specific DM with media
+.\DiscordDMBackup.ps1 -Token "TOKEN" -Format HTML -DownloadMedia
+
+# Quick JSON backup
+.\DiscordDMBackup.ps1 -Token "TOKEN"
 ```
 
 ### API Research
@@ -878,4 +1050,4 @@ Authorization: YOUR_TOKEN_HERE
 ---
 
 **Last Updated:** December 2025
-**Version:** 1.2
+**Version:** 1.3
