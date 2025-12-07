@@ -130,35 +130,8 @@ function Analyze-FriendNetwork {
         FriendsByServer = @{}
     }
 
-    # Build guild member lookup (guild ID -> member IDs)
-    Write-Host "[*] Analyzing server memberships..." -ForegroundColor Cyan
-    $guildMemberMap = @{}
-
-    $processedGuilds = 0
-    foreach ($guild in $Guilds) {
-        $processedGuilds++
-        Write-Host "`r  Processing server $processedGuilds/$($Guilds.Count)..." -ForegroundColor Gray -NoNewline
-
-        # Try to get members (may not work for all servers)
-        $members = Get-GuildMembers -Token $Token -GuildId $guild.id -Limit 1000
-
-        if ($members -and $members.Count -gt 0) {
-            $memberIds = @()
-            foreach ($member in $members) {
-                if ($member.user -and $member.user.id) {
-                    $memberIds += $member.user.id
-                }
-            }
-            $guildMemberMap[$guild.id] = @{
-                Name = $guild.name
-                MemberIds = $memberIds
-            }
-        }
-    }
-
-    Write-Host "`r" -NoNewline
-    Write-Host (" " * 70) -NoNewline
-    Write-Host "`r" -NoNewline
+    # Note: Regular user tokens cannot fetch server member lists (API limitation)
+    # We'll analyze friends based on available data without server member lookups
 
     # Analyze each friend
     foreach ($friend in $Friends) {
@@ -169,34 +142,15 @@ function Analyze-FriendNetwork {
             "$($friend.user.username)#$($friend.user.discriminator)"
         }
 
-        # Find mutual servers
-        $mutualServers = @()
-        foreach ($guildId in $guildMemberMap.Keys) {
-            $guildData = $guildMemberMap[$guildId]
-            if ($guildData.MemberIds -contains $friendId) {
-                $mutualServers += @{
-                    Id = $guildId
-                    Name = $guildData.Name
-                }
-
-                # Track friends by server
-                if (-not $networkData.FriendsByServer.ContainsKey($guildId)) {
-                    $networkData.FriendsByServer[$guildId] = @{
-                        Name = $guildData.Name
-                        Friends = @()
-                    }
-                }
-                $networkData.FriendsByServer[$guildId].Friends += $friendName
-            }
-        }
-
         $friendData = @{
             Id = $friendId
             Name = $friendName
             Username = $friend.user.username
             Discriminator = $friend.user.discriminator
-            MutualServers = $mutualServers
-            MutualServerCount = $mutualServers.Count
+            Avatar = $friend.user.avatar
+            MutualServers = @()
+            MutualServerCount = 0
+            Since = $friend.since
         }
 
         $networkData.FriendDetails += $friendData
@@ -226,96 +180,57 @@ function Show-NetworkStatistics {
     Write-Host "Total Servers: " -ForegroundColor White -NoNewline
     Write-Host $Guilds.Count -ForegroundColor Green
 
-    $serversWithFriends = $NetworkData.FriendsByServer.Count
-    Write-Host "Servers with Friends: " -ForegroundColor White -NoNewline
-    Write-Host $serversWithFriends -ForegroundColor Green
-
-    # Friends with most mutual servers
+    # Friend alphabetical list with details
     if ($NetworkData.FriendDetails.Count -gt 0) {
-        Write-Host "`n=== TOP FRIENDS BY MUTUAL SERVERS ===" -ForegroundColor Yellow
+        Write-Host "`n=== FRIEND LIST (Alphabetical) ===" -ForegroundColor Yellow
 
-        $topFriends = $NetworkData.FriendDetails |
-                      Sort-Object -Property MutualServerCount -Descending |
-                      Select-Object -First 10
+        $sortedFriends = $NetworkData.FriendDetails | Sort-Object -Property Name
 
-        $rank = 1
-        foreach ($friend in $topFriends) {
-            if ($friend.MutualServerCount -gt 0) {
-                Write-Host "  $rank. " -ForegroundColor White -NoNewline
-                Write-Host "$($friend.Name): " -ForegroundColor Cyan -NoNewline
-                Write-Host "$($friend.MutualServerCount) mutual servers" -ForegroundColor Green
-                $rank++
-            }
+        $displayCount = [Math]::Min(20, $sortedFriends.Count)
+
+        for ($i = 0; $i -lt $displayCount; $i++) {
+            $friend = $sortedFriends[$i]
+            Write-Host "  $($i + 1). " -ForegroundColor White -NoNewline
+            Write-Host "$($friend.Name)" -ForegroundColor Cyan -NoNewline
+            Write-Host " (@$($friend.Username))" -ForegroundColor DarkGray
         }
 
-        if ($rank -eq 1) {
-            Write-Host "  (No mutual server data available)" -ForegroundColor Gray
+        if ($sortedFriends.Count -gt 20) {
+            Write-Host "`n  ... and $($sortedFriends.Count - 20) more friends" -ForegroundColor Gray
+            Write-Host "  (Total: $($sortedFriends.Count) friends)" -ForegroundColor Gray
         }
     }
 
-    # Servers by friend count
-    if ($NetworkData.FriendsByServer.Count -gt 0) {
-        Write-Host "`n=== TOP SERVERS BY FRIEND COUNT ===" -ForegroundColor Yellow
+    # Server overview
+    if ($Guilds.Count -gt 0) {
+        Write-Host "`n=== YOUR SERVERS ===" -ForegroundColor Yellow
+        Write-Host "You are a member of $($Guilds.Count) servers:" -ForegroundColor White
+        Write-Host ""
 
-        $serverStats = @()
-        foreach ($guildId in $NetworkData.FriendsByServer.Keys) {
-            $serverData = $NetworkData.FriendsByServer[$guildId]
-            $serverStats += [PSCustomObject]@{
-                Name = $serverData.Name
-                FriendCount = $serverData.Friends.Count
-                Friends = $serverData.Friends
+        $displayServerCount = [Math]::Min(10, $Guilds.Count)
+
+        for ($i = 0; $i -lt $displayServerCount; $i++) {
+            $guild = $Guilds[$i]
+            Write-Host "  $($i + 1). " -ForegroundColor White -NoNewline
+            Write-Host "$($guild.name)" -ForegroundColor Yellow -NoNewline
+
+            if ($guild.owner) {
+                Write-Host " (Owner)" -ForegroundColor Magenta
+            } else {
+                Write-Host ""
             }
         }
 
-        $topServers = $serverStats | Sort-Object -Property FriendCount -Descending | Select-Object -First 10
-
-        $rank = 1
-        foreach ($server in $topServers) {
-            Write-Host "`n  $rank. " -ForegroundColor White -NoNewline
-            Write-Host "$($server.Name)" -ForegroundColor Yellow
-            Write-Host "     Friends in this server: " -ForegroundColor Gray -NoNewline
-            Write-Host $server.FriendCount -ForegroundColor Green
-
-            # Show friend names (up to 5)
-            $friendsToShow = $server.Friends | Select-Object -First 5
-            foreach ($friendName in $friendsToShow) {
-                Write-Host "       - $friendName" -ForegroundColor Cyan
-            }
-
-            if ($server.FriendCount -gt 5) {
-                Write-Host "       ... and $($server.FriendCount - 5) more" -ForegroundColor DarkGray
-            }
-
-            $rank++
+        if ($Guilds.Count -gt 10) {
+            Write-Host "`n  ... and $($Guilds.Count - 10) more servers" -ForegroundColor Gray
         }
     }
 
-    # Friend distribution
-    Write-Host "`n=== FRIEND DISTRIBUTION ===" -ForegroundColor Yellow
-
-    $friendsWithMutualServers = ($NetworkData.FriendDetails | Where-Object { $_.MutualServerCount -gt 0 }).Count
-    $friendsWithoutMutualServers = $TotalFriends - $friendsWithMutualServers
-
-    Write-Host "Friends with mutual servers: " -ForegroundColor White -NoNewline
-    Write-Host $friendsWithMutualServers -ForegroundColor Green
-
-    Write-Host "Friends without mutual servers: " -ForegroundColor White -NoNewline
-    Write-Host $friendsWithoutMutualServers -ForegroundColor Yellow
-
-    if ($TotalFriends -gt 0) {
-        $percentage = [Math]::Round(($friendsWithMutualServers / $TotalFriends) * 100, 1)
-        Write-Host "Percentage with mutual servers: " -ForegroundColor White -NoNewline
-        Write-Host "$percentage%" -ForegroundColor Cyan
-    }
-
-    # Average mutual servers per friend
-    if ($friendsWithMutualServers -gt 0) {
-        $totalMutualServers = ($NetworkData.FriendDetails | Measure-Object -Property MutualServerCount -Sum).Sum
-        $avgMutualServers = [Math]::Round($totalMutualServers / $TotalFriends, 2)
-
-        Write-Host "Average mutual servers per friend: " -ForegroundColor White -NoNewline
-        Write-Host $avgMutualServers -ForegroundColor Cyan
-    }
+    # Note about limitations
+    Write-Host "`n=== NOTE ===" -ForegroundColor Yellow
+    Write-Host "Mutual server analysis is not available due to Discord API limitations." -ForegroundColor Gray
+    Write-Host "Regular user tokens cannot access server member lists." -ForegroundColor Gray
+    Write-Host "This tool shows your friends list and server memberships." -ForegroundColor Gray
 }
 
 function Show-DetailedFriendList {
@@ -324,46 +239,32 @@ function Show-DetailedFriendList {
     )
 
     Write-Host "`n===============================================================================" -ForegroundColor Cyan
-    Write-Host "                    DETAILED FRIEND LIST                                    " -ForegroundColor Cyan
+    Write-Host "                    COMPLETE FRIEND LIST                                    " -ForegroundColor Cyan
     Write-Host "===============================================================================" -ForegroundColor Cyan
 
-    # Group friends by mutual server count
-    $friendsWithMutualServers = $FriendDetails |
-                                Where-Object { $_.MutualServerCount -gt 0 } |
-                                Sort-Object -Property MutualServerCount -Descending
+    if ($FriendDetails.Count -eq 0) {
+        Write-Host "`nNo friends found." -ForegroundColor Gray
+        return
+    }
 
-    $friendsWithoutMutualServers = $FriendDetails | Where-Object { $_.MutualServerCount -eq 0 }
+    Write-Host "`nShowing all $($FriendDetails.Count) friends:" -ForegroundColor White
+    Write-Host ""
 
-    if ($friendsWithMutualServers.Count -gt 0) {
-        Write-Host "`n=== FRIENDS WITH MUTUAL SERVERS ===" -ForegroundColor Yellow
-        Write-Host ""
+    # Sort friends alphabetically
+    $sortedFriends = $FriendDetails | Sort-Object -Property Name
 
-        foreach ($friend in $friendsWithMutualServers) {
-            Write-Host "  $($friend.Name)" -ForegroundColor Cyan -NoNewline
-            Write-Host " ($($friend.MutualServerCount) mutual servers)" -ForegroundColor Gray
+    foreach ($friend in $sortedFriends) {
+        Write-Host "  • " -ForegroundColor Gray -NoNewline
+        Write-Host "$($friend.Name)" -ForegroundColor Cyan -NoNewline
+        Write-Host " (@$($friend.Username)#$($friend.Discriminator))" -ForegroundColor DarkGray
 
-            if ($friend.MutualServers.Count -gt 0) {
-                $serversToShow = $friend.MutualServers | Select-Object -First 3
-                foreach ($server in $serversToShow) {
-                    Write-Host "    - $($server.Name)" -ForegroundColor DarkGray
-                }
-
-                if ($friend.MutualServers.Count -gt 3) {
-                    Write-Host "    ... and $($friend.MutualServers.Count - 3) more" -ForegroundColor DarkGray
-                }
-            }
-            Write-Host ""
+        if ($friend.Id) {
+            Write-Host "    ID: $($friend.Id)" -ForegroundColor DarkGray
         }
     }
 
-    if ($friendsWithoutMutualServers.Count -gt 0) {
-        Write-Host "`n=== FRIENDS WITHOUT MUTUAL SERVERS (DM only) ===" -ForegroundColor Yellow
-        Write-Host ""
-
-        foreach ($friend in $friendsWithoutMutualServers) {
-            Write-Host "  - $($friend.Name)" -ForegroundColor Gray
-        }
-    }
+    Write-Host "`n===============================================================================" -ForegroundColor Cyan
+    Write-Host "Total: $($FriendDetails.Count) friends" -ForegroundColor Green
 }
 
 function Export-Results {
