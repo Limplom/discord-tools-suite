@@ -46,6 +46,8 @@ These tools are designed for **educational purposes and security research only**
 ### Prerequisites
 
 - **Windows PowerShell 5.1** or **PowerShell 7+**
+  - PowerShell 7+ wird empfohlen für bessere Performance und Kompatibilität
+  - [📥 PowerShell 7 Download (Microsoft)](https://learn.microsoft.com/de-de/powershell/scripting/install/install-powershell-on-windows?view=powershell-7.5)
 - **Windows 10/11** (for best experience with Windows Terminal)
 - **Execution Policy** set to allow scripts:
   ```powershell
