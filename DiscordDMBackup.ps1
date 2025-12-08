@@ -6,8 +6,8 @@ param(
     [string]$Token,
 
     [Parameter(Mandatory=$false)]
-    [ValidateSet("JSON", "TXT", "HTML", "All")]
-    [string]$Format = "JSON",
+    [ValidateSet("JSON", "HTML", "All")]
+    [string]$Format = "HTML",
 
     [Parameter(Mandatory=$false)]
     [switch]$DownloadMedia,
@@ -162,62 +162,6 @@ function Export-ToJSON {
     Write-Host "  [+] JSON export: $OutputPath" -ForegroundColor Green
 }
 
-function Export-ToTXT {
-    param(
-        [string]$OutputPath,
-        [array]$Messages,
-        [hashtable]$ChannelInfo
-    )
-
-    $sb = New-Object System.Text.StringBuilder
-
-    $sb.AppendLine("=" * 80) | Out-Null
-    $sb.AppendLine("Discord DM Backup - $($ChannelInfo.Name)") | Out-Null
-    $sb.AppendLine("Exported: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')") | Out-Null
-    $sb.AppendLine("Total Messages: $($Messages.Count)") | Out-Null
-    $sb.AppendLine("=" * 80) | Out-Null
-    $sb.AppendLine("") | Out-Null
-
-    foreach ($msg in $Messages) {
-        $timestamp = if ($msg.timestamp) {
-            [DateTime]::Parse($msg.timestamp, [System.Globalization.CultureInfo]::InvariantCulture).ToString("yyyy-MM-dd HH:mm:ss")
-        } else {
-            "Unknown"
-        }
-
-        $author = if ($msg.author) {
-            if ($msg.author.global_name) {
-                $msg.author.global_name
-            } else {
-                "$($msg.author.username)#$($msg.author.discriminator)"
-            }
-        } else {
-            "Unknown"
-        }
-
-        $sb.AppendLine("[$timestamp] $author") | Out-Null
-        $sb.AppendLine($msg.content) | Out-Null
-
-        # Add attachments info
-        if ($msg.attachments -and $msg.attachments.Count -gt 0) {
-            foreach ($attachment in $msg.attachments) {
-                $sb.AppendLine("  [Attachment: $($attachment.filename) - $($attachment.url)]") | Out-Null
-            }
-        }
-
-        # Add embeds info
-        if ($msg.embeds -and $msg.embeds.Count -gt 0) {
-            $sb.AppendLine("  [Embed: $($msg.embeds.Count) embed(s)]") | Out-Null
-        }
-
-        $sb.AppendLine("") | Out-Null
-    }
-
-    $sb.ToString() | Out-File -FilePath $OutputPath -Encoding UTF8
-
-    Write-Host "  [+] TXT export: $OutputPath" -ForegroundColor Green
-}
-
 function Export-ToHTML {
     param(
         [string]$OutputPath,
@@ -268,6 +212,14 @@ function Export-ToHTML {
     $sb.AppendLine("        .attachment a { color: #00b0f4; text-decoration: none; font-size: 13px; }") | Out-Null
     $sb.AppendLine("        .attachment a:hover { text-decoration: underline; }") | Out-Null
     $sb.AppendLine("        .embed { margin-top: 10px; padding: 8px 12px; background: #2f3136; border-left: 4px solid #5865f2; border-radius: 4px; font-size: 13px; color: #b9bbbe; }") | Out-Null
+    $sb.AppendLine("        .search-container { margin-bottom: 20px; padding: 15px; background: #40444b; border-radius: 8px; }") | Out-Null
+    $sb.AppendLine("        .search-row { display: flex; gap: 10px; flex-wrap: wrap; }") | Out-Null
+    $sb.AppendLine("        .search-input { flex: 1; min-width: 250px; padding: 10px; background: #2f3136; border: 1px solid #202225; border-radius: 4px; color: #dcddde; font-size: 14px; }") | Out-Null
+    $sb.AppendLine("        .search-input:focus { outline: none; border-color: #5865f2; }") | Out-Null
+    $sb.AppendLine("        .user-filter { padding: 10px; background: #2f3136; border: 1px solid #202225; border-radius: 4px; color: #dcddde; font-size: 14px; }") | Out-Null
+    $sb.AppendLine("        .user-filter:focus { outline: none; border-color: #5865f2; }") | Out-Null
+    $sb.AppendLine("        .message-wrapper.hidden { display: none; }") | Out-Null
+    $sb.AppendLine("        .search-stats { margin-top: 10px; font-size: 13px; color: #b9bbbe; }") | Out-Null
     $sb.AppendLine("    </style>") | Out-Null
     $sb.AppendLine("</head>") | Out-Null
     $sb.AppendLine("<body>") | Out-Null
@@ -278,7 +230,34 @@ function Export-ToHTML {
     $sb.AppendLine("            <p><strong>Exported:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')</p>") | Out-Null
     $sb.AppendLine("            <p><strong>Total Messages:</strong> $($Messages.Count)</p>") | Out-Null
     $sb.AppendLine("        </div>") | Out-Null
-    $sb.AppendLine("        <div class='messages'>") | Out-Null
+
+    # Build unique users list for filter
+    $uniqueUsers = @{}
+    foreach ($msg in $Messages) {
+        if ($msg.author -and $msg.author.id) {
+            $displayName = if ($msg.author.global_name) { $msg.author.global_name } else { "$($msg.author.username)#$($msg.author.discriminator)" }
+            if (-not $uniqueUsers.ContainsKey($msg.author.id)) {
+                $uniqueUsers[$msg.author.id] = $displayName
+            }
+        }
+    }
+
+    # Add search interface
+    $sb.AppendLine("        <div class='search-container'>") | Out-Null
+    $sb.AppendLine("            <div class='search-row'>") | Out-Null
+    $sb.AppendLine("                <input type='text' id='searchInput' class='search-input' placeholder='🔍 Nachricht suchen...' />") | Out-Null
+    $sb.AppendLine("                <select id='userFilter' class='user-filter'>") | Out-Null
+    $sb.AppendLine("                    <option value=''>👥 Alle Benutzer</option>") | Out-Null
+    foreach ($userId in $uniqueUsers.Keys) {
+        $userName = [System.Web.HttpUtility]::HtmlEncode($uniqueUsers[$userId])
+        $sb.AppendLine("                    <option value='$userId'>$userName</option>") | Out-Null
+    }
+    $sb.AppendLine("                </select>") | Out-Null
+    $sb.AppendLine("            </div>") | Out-Null
+    $sb.AppendLine("            <div class='search-stats' id='searchStats'></div>") | Out-Null
+    $sb.AppendLine("        </div>") | Out-Null
+
+    $sb.AppendLine("        <div class='messages' id='messagesContainer'>") | Out-Null
 
     # Messages
     foreach ($msg in $Messages) {
@@ -308,8 +287,9 @@ function Export-ToHTML {
         }
 
         $content = [System.Web.HttpUtility]::HtmlEncode($msg.content)
+        $authorId = if ($msg.author -and $msg.author.id) { $msg.author.id } else { "" }
 
-        $sb.AppendLine("            <div class='message-wrapper $alignment'>") | Out-Null
+        $sb.AppendLine("            <div class='message-wrapper $alignment' data-author-id='$authorId' data-content='$content'>") | Out-Null
         $sb.AppendLine("                <div class='message $alignment'>") | Out-Null
         $sb.AppendLine("                    <div class='message-header'>") | Out-Null
         $sb.AppendLine("                        <span class='author' style='color: $authorColor;'>$author</span>") | Out-Null
@@ -367,6 +347,45 @@ function Export-ToHTML {
 
     $sb.AppendLine("        </div>") | Out-Null
     $sb.AppendLine("    </div>") | Out-Null
+
+    # Add JavaScript for search and filter
+    $sb.AppendLine("    <script>") | Out-Null
+    $sb.AppendLine("        const searchInput = document.getElementById('searchInput');") | Out-Null
+    $sb.AppendLine("        const userFilter = document.getElementById('userFilter');") | Out-Null
+    $sb.AppendLine("        const searchStats = document.getElementById('searchStats');") | Out-Null
+    $sb.AppendLine("        const messages = document.querySelectorAll('.message-wrapper');") | Out-Null
+    $sb.AppendLine("        const totalMessages = messages.length;") | Out-Null
+    $sb.AppendLine("") | Out-Null
+    $sb.AppendLine("        function filterMessages() {") | Out-Null
+    $sb.AppendLine("            const searchTerm = searchInput.value.toLowerCase();") | Out-Null
+    $sb.AppendLine("            const selectedUser = userFilter.value;") | Out-Null
+    $sb.AppendLine("            let visibleCount = 0;") | Out-Null
+    $sb.AppendLine("") | Out-Null
+    $sb.AppendLine("            messages.forEach(msg => {") | Out-Null
+    $sb.AppendLine("                const content = msg.dataset.content.toLowerCase();") | Out-Null
+    $sb.AppendLine("                const authorId = msg.dataset.authorId;") | Out-Null
+    $sb.AppendLine("") | Out-Null
+    $sb.AppendLine("                const matchesSearch = !searchTerm || content.includes(searchTerm);") | Out-Null
+    $sb.AppendLine("                const matchesUser = !selectedUser || authorId === selectedUser;") | Out-Null
+    $sb.AppendLine("") | Out-Null
+    $sb.AppendLine("                if (matchesSearch && matchesUser) {") | Out-Null
+    $sb.AppendLine("                    msg.classList.remove('hidden');") | Out-Null
+    $sb.AppendLine("                    visibleCount++;") | Out-Null
+    $sb.AppendLine("                } else {") | Out-Null
+    $sb.AppendLine("                    msg.classList.add('hidden');") | Out-Null
+    $sb.AppendLine("                }") | Out-Null
+    $sb.AppendLine("            });") | Out-Null
+    $sb.AppendLine("") | Out-Null
+    $sb.AppendLine("            if (searchTerm || selectedUser) {") | Out-Null
+    $sb.AppendLine("                searchStats.textContent = `📊 Zeige `" + '$' + "{visibleCount} von `" + '$' + "{totalMessages} Nachrichten`;") | Out-Null
+    $sb.AppendLine("            } else {") | Out-Null
+    $sb.AppendLine("                searchStats.textContent = '';") | Out-Null
+    $sb.AppendLine("            }") | Out-Null
+    $sb.AppendLine("        }") | Out-Null
+    $sb.AppendLine("") | Out-Null
+    $sb.AppendLine("        searchInput.addEventListener('input', filterMessages);") | Out-Null
+    $sb.AppendLine("        userFilter.addEventListener('change', filterMessages);") | Out-Null
+    $sb.AppendLine("    </script>") | Out-Null
     $sb.AppendLine("</body>") | Out-Null
     $sb.AppendLine("</html>") | Out-Null
 
@@ -563,11 +582,6 @@ function Backup-SelectedDMs {
         if ($Format -eq "JSON" -or $Format -eq "All") {
             $jsonPath = Join-Path $outputDir "$channelName.json"
             Export-ToJSON -OutputPath $jsonPath -Messages $messages -ChannelInfo $channelInfo
-        }
-
-        if ($Format -eq "TXT" -or $Format -eq "All") {
-            $txtPath = Join-Path $outputDir "$channelName.txt"
-            Export-ToTXT -OutputPath $txtPath -Messages $messages -ChannelInfo $channelInfo
         }
 
         if ($Format -eq "HTML" -or $Format -eq "All") {
