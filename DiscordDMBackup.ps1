@@ -333,7 +333,7 @@ function Export-ToHTML {
                     # Embed image
                     $sb.AppendLine("                    <div class='attachment'>") | Out-Null
                     $sb.AppendLine("                        <a href='$url' target='_blank'>") | Out-Null
-                    $sb.AppendLine("                            <img src='$url' alt='$fileName' style='max-width: 100%; border-radius: 8px; margin-top: 8px;' loading='lazy'>") | Out-Null
+                    $sb.AppendLine("                            <img src='$url' alt='$fileName' style='max-width: 100%; border-radius: 8px; margin-top: 8px;'>") | Out-Null
                     $sb.AppendLine("                        </a>") | Out-Null
                     $sb.AppendLine("                        <div style='font-size: 12px; color: #a3a6aa; margin-top: 4px;'>📎 $fileName</div>") | Out-Null
                     $sb.AppendLine("                    </div>") | Out-Null
