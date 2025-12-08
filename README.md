@@ -18,6 +18,8 @@ These tools are designed for **educational purposes and security research only**
   - [3. Discord Affinity Analyzer](#3-discord-affinity-analyzer)
   - [4. Discord Connections Analyzer](#4-discord-connections-analyzer)
   - [5. Discord Message Analytics](#5-discord-message-analytics)
+  - [6. Discord Friend Network Analyzer](#6-discord-friend-network-analyzer)
+  - [7. Discord DM Backup](#7-discord-dm-backup)
 - [Common Use Cases](#common-use-cases)
 - [Security Best Practices](#security-best-practices)
 - [Troubleshooting](#troubleshooting)
@@ -34,6 +36,8 @@ These tools are designed for **educational purposes and security research only**
 | **DiscordAffinityAnalyzer.ps1** | Analyze server activity and mentions | Shows affinity scores, mention statistics |
 | **DiscordConnectionsAnalyzer.ps1** | Audit connected accounts & privacy | Privacy scoring, token exposure detection |
 | **DiscordMessageAnalyzer.ps1** | Analyze messaging patterns & activity | DM stats, emoji usage, time-based analysis |
+| **DiscordFriendNetworkAnalyzer.ps1** | Map friend relationships & networks | Mutual servers, friend distribution, social graph |
+| **DiscordDMBackup.ps1** | Export & archive DM conversations | JSON/TXT/HTML export, media downloads, chronological ordering |
 
 ---
 
@@ -42,6 +46,8 @@ These tools are designed for **educational purposes and security research only**
 ### Prerequisites
 
 - **Windows PowerShell 5.1** or **PowerShell 7+**
+  - PowerShell 7+ wird empfohlen für bessere Performance und Kompatibilität
+  - [📥 PowerShell 7 Download (Microsoft)](https://learn.microsoft.com/de-de/powershell/scripting/install/install-powershell-on-windows?view=powershell-7.5)
 - **Windows 10/11** (for best experience with Windows Terminal)
 - **Execution Policy** set to allow scripts:
   ```powershell
@@ -95,7 +101,7 @@ The launcher provides:
 
 **File:** `DiscordTokenSearch.ps1`
 
-Advanced token search tool that finds both unencrypted AND encrypted Discord authentication tokens.
+Advanced token search tool that finds, validates, and displays Discord authentication tokens with usernames. Automatically filters out invalid/expired tokens.
 
 #### Features
 
@@ -112,6 +118,13 @@ Advanced token search tool that finds both unencrypted AND encrypted Discord aut
 - Finds unencrypted tokens (old format)
 - Finds encrypted tokens (new format: `dQw4w9WgXcQ:base64`)
 - Offers to install PowerShell 7 if encrypted tokens detected
+
+**Token Validation:**
+- Validates all found tokens via Discord API
+- Displays username/global name for each valid token
+- Shows Discord ID for each account
+- Automatically filters out invalid/expired tokens
+- Progress indicator during validation
 
 #### Requirements
 
@@ -543,6 +556,284 @@ The tool analyzes:
 
 ---
 
+### 6. Discord Friend Network Analyzer
+
+**File:** `DiscordFriendNetworkAnalyzer.ps1`
+
+Comprehensive tool for analyzing your Discord friend network, mapping relationships, and discovering mutual connections across servers.
+
+#### Usage
+
+```powershell
+# Basic usage
+.\DiscordFriendNetworkAnalyzer.ps1 -Token "YOUR_TOKEN"
+
+# Export results to JSON file
+.\DiscordFriendNetworkAnalyzer.ps1 -Token "YOUR_TOKEN" -ExportToFile
+```
+
+#### Features
+
+- **Friend Analysis:**
+  - Complete friend list with relationship data
+  - Identifies mutual servers for each friend
+  - Ranks friends by number of mutual servers
+  - Separates server friends from DM-only friends
+
+- **Server Analytics:**
+  - Top servers by friend count
+  - Shows which friends are in each server
+  - Server-based friend clustering
+  - Identifies your most social servers
+
+- **Network Statistics:**
+  - Total friends and servers overview
+  - Friend distribution analysis
+  - Average mutual servers per friend
+  - Percentage of friends with mutual servers
+
+- **Social Patterns:**
+  - Discovers friend clustering patterns
+  - Maps your social network structure
+  - Identifies isolated vs. connected friends
+
+#### Output Example
+
+```
+===============================================================================
+                    FRIEND NETWORK ANALYSIS
+===============================================================================
+
+=== OVERALL STATISTICS ===
+Total Friends: 42
+Total Servers: 16
+Servers with Friends: 8
+
+=== TOP FRIENDS BY MUTUAL SERVERS ===
+  1. BestFriend: 8 mutual servers
+  2. GamingBuddy: 6 mutual servers
+  3. Colleague: 4 mutual servers
+  4. ClassMate: 3 mutual servers
+  5. Teammate: 2 mutual servers
+
+=== TOP SERVERS BY FRIEND COUNT ===
+
+  1. Gaming Community
+     Friends in this server: 15
+       - BestFriend
+       - GamingBuddy
+       - Player123
+       - ProGamer
+       - StreamerFriend
+       ... and 10 more
+
+  2. Developer Hub
+     Friends in this server: 8
+       - Colleague
+       - CodeMaster
+       - DevFriend
+       ... and 5 more
+
+=== FRIEND DISTRIBUTION ===
+Friends with mutual servers: 35
+Friends without mutual servers: 7
+Percentage with mutual servers: 83.3%
+Average mutual servers per friend: 2.4
+
+===============================================================================
+                    DETAILED FRIEND LIST
+===============================================================================
+
+=== FRIENDS WITH MUTUAL SERVERS ===
+
+  BestFriend (8 mutual servers)
+    - Gaming Community
+    - Developer Hub
+    - Movie Nights
+    ... and 5 more
+
+  GamingBuddy (6 mutual servers)
+    - Gaming Community
+    - FPS Squad
+    - Strategy Games
+
+=== FRIENDS WITHOUT MUTUAL SERVERS (DM only) ===
+  - RandomPerson
+  - OldFriend
+  - DMContact
+```
+
+#### Data Sources
+
+The tool analyzes:
+- **Friend Relationships:** Complete friend list from Discord API
+- **Server Memberships:** Your server list and member data
+- **Mutual Connections:** Cross-references friends across servers
+
+#### Privacy & Limitations
+
+- Analyzes only YOUR friend list and server memberships
+- Server member data may be limited based on server permissions
+- Large servers may have partial member data
+- All data stays local unless exported
+- Built-in rate limiting to respect Discord API
+
+---
+
+### 7. Discord DM Backup
+
+**File:** `DiscordDMBackup.ps1`
+
+Comprehensive backup tool for exporting and archiving Discord DM conversations in multiple formats with optional media downloads.
+
+#### Usage
+
+```powershell
+# Basic usage (JSON export)
+.\DiscordDMBackup.ps1 -Token "YOUR_TOKEN"
+
+# Export as TXT
+.\DiscordDMBackup.ps1 -Token "YOUR_TOKEN" -Format TXT
+
+# Export as HTML
+.\DiscordDMBackup.ps1 -Token "YOUR_TOKEN" -Format HTML
+
+# Export all formats
+.\DiscordDMBackup.ps1 -Token "YOUR_TOKEN" -Format All
+
+# With media downloads
+.\DiscordDMBackup.ps1 -Token "YOUR_TOKEN" -DownloadMedia
+```
+
+#### Features
+
+- **Multiple Export Formats:**
+  - **JSON**: Complete message data with full metadata
+  - **TXT**: Human-readable plain text format
+  - **HTML**: Beautiful Discord-style formatted HTML
+  - **All**: Exports in all three formats simultaneously
+
+- **Selective Backup:**
+  - View all DM conversations
+  - Choose specific conversations to backup
+  - Backup all conversations at once
+  - Interactive selection interface
+
+- **Media Support:**
+  - Optional media file downloads
+  - Preserves attachment URLs in exports
+  - Organizes media by conversation
+  - Supports images, videos, and other files
+
+- **Smart Features:**
+  - Chronological message ordering (oldest first)
+  - Handles large conversations (up to 10,000 messages)
+  - Rate limiting to respect Discord API
+  - Automatic timestamp conversion
+  - Sanitized filenames for compatibility
+
+#### Output Example
+
+**JSON Format:**
+```json
+{
+  "Channel": {
+    "Name": "Friend#1234",
+    "Id": "123456789",
+    "Type": 1
+  },
+  "MessageCount": 150,
+  "ExportedAt": "2025-12-07 15:30:00",
+  "Messages": [
+    {
+      "id": "123456789",
+      "content": "Hello!",
+      "timestamp": "2025-01-01T10:00:00.000Z",
+      "author": {
+        "username": "Friend",
+        "global_name": "Friend#1234"
+      }
+    }
+  ]
+}
+```
+
+**TXT Format:**
+```
+================================================================================
+Discord DM Backup - Friend#1234
+Exported: 2025-12-07 15:30:00
+Total Messages: 150
+================================================================================
+
+[2025-01-01 10:00:00] Friend#1234
+Hello!
+
+[2025-01-01 10:05:00] YourName
+Hi there!
+  [Attachment: image.png - https://cdn.discordapp.com/...]
+
+```
+
+**HTML Format:**
+- Discord-themed dark mode design
+- Formatted messages with timestamps
+- Author names with colors
+- Clickable attachment links
+- Responsive layout
+- Embed indicators
+
+#### Directory Structure
+
+```
+DM_Backups/
+└── Backup_20251207_153000/
+    ├── Friend_1234.json
+    ├── Friend_1234.txt
+    ├── Friend_1234.html
+    ├── Friend_1234_media/
+    │   ├── 123456_image.png
+    │   ├── 123457_document.pdf
+    │   └── ...
+    ├── Group_Chat.json
+    └── ...
+```
+
+#### Interactive Selection
+
+When you run the tool, you'll see:
+```
+===============================================================================
+                    YOUR DM CONVERSATIONS
+===============================================================================
+
+  [1] Friend#1234
+  [2] Colleague#5678
+  [3] Group DM (5 members)
+  [4] Gaming Buddy
+  ...
+
+[?] Enter DM numbers to backup (e.g., 1,3,5 or 'all'):
+```
+
+#### Performance Notes
+
+- Fetches messages in batches of 100 (Discord API limit)
+- Rate limited to prevent API abuse (500ms delay between requests)
+- Large conversations may take several minutes
+- Safety limit of 10,000 messages per conversation
+- Media downloads add additional time (200ms per file)
+
+#### Use Cases
+
+- **Backup Important Conversations**: Archive valuable discussions
+- **Before Account Changes**: Save DMs before deleting account
+- **Legal/Compliance**: Document business communications
+- **Nostalgia**: Save old conversations with friends
+- **Migration**: Move conversations to another platform
+
+---
+
 ## 🎯 Common Use Cases
 
 ### Security Audit
@@ -567,9 +858,29 @@ $results = Test-DiscordAPI -Token "TOKEN" -SaveToFile
 # Analyze messaging patterns
 .\DiscordMessageAnalyzer.ps1 -Token "TOKEN"
 
+# Analyze friend network
+.\DiscordFriendNetworkAnalyzer.ps1 -Token "TOKEN"
+
+# Backup DM conversations
+.\DiscordDMBackup.ps1 -Token "TOKEN" -Format All
+
 # Export for further analysis
 .\DiscordConnectionsAnalyzer.ps1 -Token "TOKEN" -ExportToFile
 .\DiscordMessageAnalyzer.ps1 -Token "TOKEN" -ExportToFile
+.\DiscordFriendNetworkAnalyzer.ps1 -Token "TOKEN" -ExportToFile
+```
+
+### Data Backup
+
+```powershell
+# Backup all DMs in all formats
+.\DiscordDMBackup.ps1 -Token "TOKEN" -Format All
+
+# Backup specific DM with media
+.\DiscordDMBackup.ps1 -Token "TOKEN" -Format HTML -DownloadMedia
+
+# Quick JSON backup
+.\DiscordDMBackup.ps1 -Token "TOKEN"
 ```
 
 ### API Research
@@ -741,4 +1052,4 @@ Authorization: YOUR_TOKEN_HERE
 ---
 
 **Last Updated:** December 2025
-**Version:** 1.1
+**Version:** 1.3
