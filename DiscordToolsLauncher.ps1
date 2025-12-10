@@ -102,7 +102,7 @@ $script:Tools = @{
     '7' = @{
         Name = 'Discord DM Backup'
         File = 'DiscordDMBackup.ps1'
-        Description = 'Export & archive DM conversations (JSON/TXT/HTML)'
+        Description = 'Export & archive DM conversations (JSON/HTML)'
         RequiresToken = $true
     }
 }
@@ -466,9 +466,9 @@ function Start-Tool {
             }
             '7' {
                 # DM Backup - requires token, ask for format and media options
-                Write-Host "[?] Export format (JSON/TXT/HTML/All) [JSON]: " -ForegroundColor Yellow -NoNewline
+                Write-Host "[?] Export format (JSON/HTML/All) [HTML]: " -ForegroundColor Yellow -NoNewline
                 $format = Read-Host
-                if ([string]::IsNullOrWhiteSpace($format)) { $format = "JSON" }
+                if ([string]::IsNullOrWhiteSpace($format)) { $format = "HTML" }
 
                 Write-Host "[?] Download media files? (Y/N) [N]: " -ForegroundColor Yellow -NoNewline
                 $mediaChoice = Read-Host
