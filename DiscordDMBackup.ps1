@@ -377,7 +377,7 @@ function Export-ToHTML {
     $sb.AppendLine("            });") | Out-Null
     $sb.AppendLine("") | Out-Null
     $sb.AppendLine("            if (searchTerm || selectedUser) {") | Out-Null
-    $sb.AppendLine("                searchStats.textContent = `📊 Zeige `" + '$' + "{visibleCount} von `" + '$' + "{totalMessages} Nachrichten`;") | Out-Null
+    $sb.AppendLine("                searchStats.textContent = '📊 Zeige ' + visibleCount + ' von ' + totalMessages + ' Nachrichten';") | Out-Null
     $sb.AppendLine("            } else {") | Out-Null
     $sb.AppendLine("                searchStats.textContent = '';") | Out-Null
     $sb.AppendLine("            }") | Out-Null
