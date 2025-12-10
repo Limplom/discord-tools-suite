@@ -37,7 +37,7 @@ These tools are designed for **educational purposes and security research only**
 | **DiscordConnectionsAnalyzer.ps1** | Audit connected accounts & privacy | Privacy scoring, token exposure detection |
 | **DiscordMessageAnalyzer.ps1** | Analyze messaging patterns & activity | DM stats, emoji usage, time-based analysis |
 | **DiscordFriendNetworkAnalyzer.ps1** | Map friend relationships & networks | Mutual servers, friend distribution, social graph |
-| **DiscordDMBackup.ps1** | Export & archive DM conversations | JSON/TXT/HTML export, media downloads, chronological ordering |
+| **DiscordDMBackup.ps1** | Export & archive DM conversations | JSON/HTML export, search functionality, media visualization, organized backups |
 
 ---
 
@@ -684,18 +684,18 @@ The tool analyzes:
 
 **File:** `DiscordDMBackup.ps1`
 
-Comprehensive backup tool for exporting and archiving Discord DM conversations in multiple formats with optional media downloads.
+Comprehensive backup tool for exporting and archiving Discord DM conversations with interactive search, media visualization, and organized storage per Discord account.
 
 #### Usage
 
 ```powershell
-# Basic usage (JSON export)
+# Basic usage (HTML export - default)
 .\DiscordDMBackup.ps1 -Token "YOUR_TOKEN"
 
-# Export as TXT
-.\DiscordDMBackup.ps1 -Token "YOUR_TOKEN" -Format TXT
+# Export as JSON
+.\DiscordDMBackup.ps1 -Token "YOUR_TOKEN" -Format JSON
 
-# Export as HTML
+# Export as HTML (with search functionality)
 .\DiscordDMBackup.ps1 -Token "YOUR_TOKEN" -Format HTML
 
 # Export all formats
@@ -707,29 +707,53 @@ Comprehensive backup tool for exporting and archiving Discord DM conversations i
 
 #### Features
 
-- **Multiple Export Formats:**
-  - **JSON**: Complete message data with full metadata
-  - **TXT**: Human-readable plain text format
-  - **HTML**: Beautiful Discord-style formatted HTML
-  - **All**: Exports in all three formats simultaneously
+- **🔍 Interactive Search (HTML):**
+  - Text-based search through message content
+  - Filter messages by specific user
+  - Live filtering without page reload
+  - Search statistics display
+  - Combine text search + user filter
 
-- **Selective Backup:**
-  - View all DM conversations
+- **🎨 Modern HTML Export:**
+  - Discord-themed dark mode design
+  - Chat-style layout (left/right alignment)
+  - Unique colors for each user
+  - **Embedded media visualization:**
+    - Images (PNG, JPG, GIF, WEBP, BMP) display inline
+    - Videos (MP4, WEBM, MOV) with playback controls
+    - Clickable for full view/download
+  - Full date/time stamps (dd.MM.yyyy HH:mm)
+  - Responsive and mobile-friendly
+
+- **📁 Organized Storage:**
+  - Backups organized by Discord User ID
+  - Structure: `DM_Backups/[USER_ID]/Backup_TIMESTAMP/`
+  - Multiple accounts get separate folders
+  - Stored in script directory (not user home)
+
+- **📦 Export Formats:**
+  - **HTML**: Beautiful chat interface with search (default)
+  - **JSON**: Complete message data with full metadata
+  - **All**: Exports both formats simultaneously
+
+- **💬 Selective Backup:**
+  - View all DM conversations with member lists
+  - Group DMs show all participants
   - Choose specific conversations to backup
   - Backup all conversations at once
   - Interactive selection interface
 
-- **Media Support:**
+- **🎬 Media Support:**
   - Optional media file downloads
   - Preserves attachment URLs in exports
   - Organizes media by conversation
-  - Supports images, videos, and other files
+  - Supports all file types
 
-- **Smart Features:**
+- **⚡ Smart Features:**
   - Chronological message ordering (oldest first)
   - Handles large conversations (up to 10,000 messages)
   - Rate limiting to respect Discord API
-  - Automatic timestamp conversion
+  - Culture-invariant date parsing
   - Sanitized filenames for compatibility
 
 #### Output Example
@@ -758,46 +782,57 @@ Comprehensive backup tool for exporting and archiving Discord DM conversations i
 }
 ```
 
-**TXT Format:**
-```
-================================================================================
-Discord DM Backup - Friend#1234
-Exported: 2025-12-07 15:30:00
-Total Messages: 150
-================================================================================
-
-[2025-01-01 10:00:00] Friend#1234
-Hello!
-
-[2025-01-01 10:05:00] YourName
-Hi there!
-  [Attachment: image.png - https://cdn.discordapp.com/...]
-
-```
-
 **HTML Format:**
-- Discord-themed dark mode design
-- Formatted messages with timestamps
-- Author names with colors
-- Clickable attachment links
-- Responsive layout
-- Embed indicators
+```html
+<!-- Modern chat-style interface with: -->
+- 🔍 Search bar with user filter dropdown
+- 💬 Left-aligned messages from others (gray)
+- 💬 Right-aligned messages from you (blue)
+- 🎨 Unique color for each user
+- 🖼️ Embedded images (clickable)
+- 🎥 Embedded videos (with playback)
+- 📊 Live search statistics
+- 📅 Full timestamps (dd.MM.yyyy HH:mm)
+```
+
+**Search Functionality Example:**
+```
+┌─────────────────────────────────────────┐
+│ 🔍 Nachricht suchen...  | 👥 Alle ▼    │
+├─────────────────────────────────────────┤
+│ 📊 Zeige 45 von 5211 Nachrichten       │
+└─────────────────────────────────────────┘
+
+[Search for "hello" + filter by "Friend"]
+→ Shows only messages containing "hello" from Friend
+```
 
 #### Directory Structure
 
 ```
-DM_Backups/
-└── Backup_20251207_153000/
-    ├── Friend_1234.json
-    ├── Friend_1234.txt
-    ├── Friend_1234.html
-    ├── Friend_1234_media/
-    │   ├── 123456_image.png
-    │   ├── 123457_document.pdf
-    │   └── ...
-    ├── Group_Chat.json
-    └── ...
+discord-tools-suite/
+└── DM_Backups/
+    ├── 123456789012345678/          # User ID 1
+    │   ├── Backup_20251207_153000/
+    │   │   ├── Friend_Name.json
+    │   │   ├── Friend_Name.html    # With search & media
+    │   │   ├── Friend_Name_media/
+    │   │   │   ├── 123456_image.png
+    │   │   │   ├── 123457_video.mp4
+    │   │   │   └── ...
+    │   │   └── Group_Chat.html
+    │   └── Backup_20251207_210000/
+    │       └── ...
+    └── 987654321098765432/          # User ID 2
+        └── Backup_20251208_093000/
+            └── ...
 ```
+
+**Benefits:**
+- ✅ Each Discord account gets its own folder
+- ✅ Multiple backups from same account stay organized
+- ✅ Easy to manage multi-account backups
+- ✅ Stored in script directory for portability
 
 #### Interactive Selection
 
@@ -809,12 +844,18 @@ When you run the tool, you'll see:
 
   [1] Friend#1234
   [2] Colleague#5678
-  [3] Group DM (5 members)
-  [4] Gaming Buddy
+  [3] Group DM (3 members) [Alice, Bob, Charlie]
+  [4] Gaming Squad (5 members) [Player1, Player2, Player3, Player4, Player5]
+  [5] Work Team (8 members) [...]
   ...
 
 [?] Enter DM numbers to backup (e.g., 1,3,5 or 'all'):
 ```
+
+**Group DM Display:**
+- Shows member count
+- Lists all participants in brackets
+- Makes it easy to identify which group chat is which
 
 #### Performance Notes
 
