@@ -1,0 +1,128 @@
+name: Run PowerShell Tests
+
+on:
+  push:
+    branches: [ main, master, claude/** ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  test-windows:
+    name: Test on Windows (PowerShell 5.1 & 7+)
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        powershell-version: ['5.1', '7.4']
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PowerShell ${{ matrix.powershell-version }}
+        if: matrix.powershell-version != '5.1'
+        uses: actions/setup-powershell@v1
+        with:
+          powershell-version: ${{ matrix.powershell-version }}
+
+      - name: Display PowerShell version
+        shell: pwsh
+        run: |
+          Write-Host "PowerShell Version:"
+          $PSVersionTable
+
+      - name: Install Pester
+        shell: pwsh
+        run: |
+          Write-Host "Installing Pester 5.x..."
+          Install-Module -Name Pester -MinimumVersion 5.0 -Force -SkipPublisherCheck
+          Write-Host "Pester installed successfully"
+          Get-Module -Name Pester -ListAvailable
+
+      - name: Run Tests
+        shell: pwsh
+        run: |
+          Write-Host "Running tests..."
+          Import-Module Pester -MinimumVersion 5.0
+
+          $configuration = [PesterConfiguration]::Default
+          $configuration.Run.Path = './Tests'
+          $configuration.Output.Verbosity = 'Detailed'
+          $configuration.Run.Exit = $true
+
+          Invoke-Pester -Configuration $configuration
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-ps${{ matrix.powershell-version }}
+          path: Tests/*.xml
+          if-no-files-found: ignore
+
+  test-coverage:
+    name: Code Coverage Report
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Pester
+        shell: pwsh
+        run: |
+          Install-Module -Name Pester -MinimumVersion 5.0 -Force -SkipPublisherCheck
+
+      - name: Run Tests with Coverage
+        shell: pwsh
+        run: |
+          Import-Module Pester -MinimumVersion 5.0
+
+          $configuration = [PesterConfiguration]::Default
+          $configuration.Run.Path = './Tests'
+          $configuration.Output.Verbosity = 'Detailed'
+
+          # Enable code coverage
+          $configuration.CodeCoverage.Enabled = $true
+          $configuration.CodeCoverage.Path = @(
+            './DiscordTokenSearch.ps1'
+          )
+          $configuration.CodeCoverage.OutputFormat = 'JaCoCo'
+          $configuration.CodeCoverage.OutputPath = './Tests/coverage.xml'
+
+          $result = Invoke-Pester -Configuration $configuration
+
+          # Display coverage summary
+          Write-Host ""
+          Write-Host "========================================" -ForegroundColor Cyan
+          Write-Host "Code Coverage Summary" -ForegroundColor Cyan
+          Write-Host "========================================" -ForegroundColor Cyan
+
+          if ($result.CodeCoverage) {
+            $coveragePercent = [math]::Round($result.CodeCoverage.CoveragePercent, 2)
+            Write-Host "Coverage: $coveragePercent%" -ForegroundColor $(
+              if ($coveragePercent -ge 80) { "Green" }
+              elseif ($coveragePercent -ge 60) { "Yellow" }
+              else { "Red" }
+            )
+            Write-Host "Lines Covered: $($result.CodeCoverage.CoveredLines)" -ForegroundColor Gray
+            Write-Host "Lines Missed: $($result.CodeCoverage.MissedLines)" -ForegroundColor Gray
+          }
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: Tests/coverage.xml
+          if-no-files-found: ignore
+
+      - name: Comment coverage on PR
+        if: github.event_name == 'pull_request'
+        uses: 5monkeys/cobertura-action@master
+        continue-on-error: true
+        with:
+          path: Tests/coverage.xml
+          minimum_coverage: 75
+          fail_below_threshold: false

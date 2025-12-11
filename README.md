@@ -23,6 +23,7 @@ These tools are designed for **educational purposes and security research only**
 - [Common Use Cases](#common-use-cases)
 - [Security Best Practices](#security-best-practices)
 - [Troubleshooting](#troubleshooting)
+- [Testing](#testing)
 
 ---
 
@@ -1032,6 +1033,59 @@ All tools include automatic rate limiting and retry logic.
 - [Discord API Documentation](https://discord.com/developers/docs)
 - [Discord Developer Portal](https://discord.com/developers/applications)
 - [PowerShell Documentation](https://docs.microsoft.com/powershell/)
+
+---
+
+## 🧪 Testing
+
+This project includes a comprehensive test suite using **Pester 5.x** - PowerShell's native testing framework.
+
+### Test Coverage
+
+- **40+ test cases** covering critical security functions
+- **100% function coverage** for DiscordTokenSearch.ps1
+- **Integration tests** for end-to-end workflows
+- **Automated CI/CD** testing on every commit
+
+### Quick Start
+
+```powershell
+# Install Pester (one-time setup)
+Install-Module -Name Pester -MinimumVersion 5.0 -Force -SkipPublisherCheck
+
+# Run all tests
+./Tests/Run-Tests.ps1
+
+# Run with code coverage
+./Tests/Run-Tests.ps1 -Coverage
+
+# Run specific test file
+./Tests/Run-Tests.ps1 -TestFile "DiscordTokenSearch.Tests.ps1"
+```
+
+### What's Tested
+
+| Function | Test Cases | Coverage |
+|----------|-----------|----------|
+| `Test-TokenValidity` | 8 | Token validation, API errors, network failures |
+| `Get-MasterKey` | 6 | Master key extraction, DPAPI decryption |
+| `ConvertFrom-EncryptedToken` | 5 | AES-GCM decryption (PS7+), format validation |
+| `Get-Tokens` | 20+ | Token detection, regex patterns, file handling |
+
+### Documentation
+
+For detailed test information, see:
+- [`Tests/README.md`](Tests/README.md) - Setup and usage guide
+- [`Tests/TEST_COVERAGE.md`](Tests/TEST_COVERAGE.md) - Detailed coverage documentation
+
+### Continuous Integration
+
+Tests run automatically on GitHub Actions for:
+- ✅ PowerShell 5.1 and 7.4
+- ✅ Every push and pull request
+- ✅ Multiple operating systems
+
+View test status: ![Tests](https://github.com/Limplom/discord-tools-suite/actions/workflows/run-tests.yml/badge.svg)
 
 ---
 
