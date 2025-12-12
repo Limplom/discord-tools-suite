@@ -8,23 +8,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  test-windows:
-    name: Test on Windows (PowerShell 5.1 & 7+)
+  test-powershell-7:
+    name: Test on PowerShell 7+
     runs-on: windows-latest
-
-    strategy:
-      matrix:
-        powershell-version: ['5.1', '7.4']
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Setup PowerShell ${{ matrix.powershell-version }}
-        if: matrix.powershell-version != '5.1'
-        uses: actions/setup-powershell@v1
-        with:
-          powershell-version: ${{ matrix.powershell-version }}
 
       - name: Display PowerShell version
         shell: pwsh
@@ -57,7 +47,50 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-ps${{ matrix.powershell-version }}
+          name: test-results-ps7
+          path: Tests/*.xml
+          if-no-files-found: ignore
+
+  test-powershell-51:
+    name: Test on PowerShell 5.1
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Display PowerShell version
+        shell: powershell
+        run: |
+          Write-Host "PowerShell Version:"
+          $PSVersionTable
+
+      - name: Install Pester
+        shell: powershell
+        run: |
+          Write-Host "Installing Pester 5.x..."
+          Install-Module -Name Pester -MinimumVersion 5.0 -Force -SkipPublisherCheck
+          Write-Host "Pester installed successfully"
+          Get-Module -Name Pester -ListAvailable
+
+      - name: Run Tests
+        shell: powershell
+        run: |
+          Write-Host "Running tests..."
+          Import-Module Pester -MinimumVersion 5.0
+
+          $configuration = [PesterConfiguration]::Default
+          $configuration.Run.Path = './Tests'
+          $configuration.Output.Verbosity = 'Detailed'
+          $configuration.Run.Exit = $true
+
+          Invoke-Pester -Configuration $configuration
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-ps51
           path: Tests/*.xml
           if-no-files-found: ignore
 
